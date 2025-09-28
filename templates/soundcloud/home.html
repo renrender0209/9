@@ -1,0 +1,168 @@
+{% extends "soundcloud/base.html" %}
+
+{% block title %}SoundCloud Music - ホーム{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- 検索バー -->
+    <div class="search-bar">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="楽曲、アーティスト、プレイリストを検索...">
+    </div>
+    
+    <!-- ウェルカムメッセージ -->
+    <div class="content-card text-center">
+        <h1 class="mb-4">
+            <i class="fab fa-soundcloud text-warning me-3"></i>
+            SoundCloud Music
+        </h1>
+        <p class="lead mb-4">世界中の音楽を発見し、お気に入りのアーティストを見つけよう</p>
+        
+        <!-- 人気ジャンル -->
+        <div class="genre-tags justify-content-center">
+            <a href="{{ url_for('soundcloud.soundcloud_search', q='electronic') }}" class="genre-tag">エレクトロニック</a>
+            <a href="{{ url_for('soundcloud.soundcloud_search', q='hip hop') }}" class="genre-tag">ヒップホップ</a>
+            <a href="{{ url_for('soundcloud.soundcloud_search', q='indie') }}" class="genre-tag">インディー</a>
+            <a href="{{ url_for('soundcloud.soundcloud_search', q='rock') }}" class="genre-tag">ロック</a>
+            <a href="{{ url_for('soundcloud.soundcloud_search', q='pop') }}" class="genre-tag">ポップ</a>
+            <a href="{{ url_for('soundcloud.soundcloud_search', q='jazz') }}" class="genre-tag">ジャズ</a>
+            <a href="{{ url_for('soundcloud.soundcloud_search', q='classical') }}" class="genre-tag">クラシック</a>
+            <a href="{{ url_for('soundcloud.soundcloud_search', q='ambient') }}" class="genre-tag">アンビエント</a>
+        </div>
+    </div>
+    
+    <!-- クイックアクション -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="content-card text-center h-100">
+                <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                <h4>音楽を検索</h4>
+                <p class="text-muted">楽曲名やアーティスト名で検索して、新しい音楽を発見しよう</p>
+                <a href="{{ url_for('soundcloud.soundcloud_search') }}" class="btn btn-primary">
+                    検索を開始
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="content-card text-center h-100">
+                <i class="fas fa-fire fa-3x text-danger mb-3"></i>
+                <h4>トレンド音楽</h4>
+                <p class="text-muted">今話題の楽曲やアーティストをチェックしよう</p>
+                <a href="{{ url_for('soundcloud.soundcloud_trending') }}" class="btn btn-danger">
+                    トレンドを見る
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="content-card text-center h-100">
+                <i class="fab fa-soundcloud fa-3x text-warning mb-3"></i>
+                <h4>SoundCloudで探索</h4>
+                <p class="text-muted">世界中のクリエイターの音楽を楽しもう</p>
+                <a href="https://soundcloud.com" target="_blank" class="btn btn-warning">
+                    SoundCloudへ
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 推奨検索キーワード -->
+    <div class="content-card">
+        <h3 class="mb-4">
+            <i class="fas fa-lightbulb me-2"></i>
+            おすすめの検索キーワード
+        </h3>
+        
+        <div class="row g-3">
+            <div class="col-md-6">
+                <h5 class="text-muted mb-3">ジャンル別</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='techno') }}" class="btn btn-outline-primary btn-sm">テクノ</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='house') }}" class="btn btn-outline-primary btn-sm">ハウス</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='dubstep') }}" class="btn btn-outline-primary btn-sm">ダブステップ</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='trap') }}" class="btn btn-outline-primary btn-sm">トラップ</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='lo-fi') }}" class="btn btn-outline-primary btn-sm">Lo-Fi</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='chillhop') }}" class="btn btn-outline-primary btn-sm">チルホップ</a>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h5 class="text-muted mb-3">ムード別</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='chill') }}" class="btn btn-outline-success btn-sm">チル</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='uplifting') }}" class="btn btn-outline-success btn-sm">アップリフティング</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='relaxing') }}" class="btn btn-outline-success btn-sm">リラックス</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='energetic') }}" class="btn btn-outline-success btn-sm">エナジェティック</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='meditation') }}" class="btn btn-outline-success btn-sm">瞑想</a>
+                    <a href="{{ url_for('soundcloud.soundcloud_search', q='study') }}" class="btn btn-outline-success btn-sm">勉強用</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 使い方の説明 -->
+    <div class="content-card">
+        <h3 class="mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            使い方
+        </h3>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="d-flex align-items-start">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; min-width: 40px;">
+                        <span class="fw-bold">1</span>
+                    </div>
+                    <div>
+                        <h5>検索</h5>
+                        <p class="text-muted mb-0">上部の検索バーで楽曲やアーティストを検索します</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="d-flex align-items-start">
+                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; min-width: 40px;">
+                        <span class="fw-bold">2</span>
+                    </div>
+                    <div>
+                        <h5>選択</h5>
+                        <p class="text-muted mb-0">お気に入りの楽曲を見つけて再生ボタンをクリック</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="d-flex align-items-start">
+                    <div class="bg-warning text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; min-width: 40px;">
+                        <span class="fw-bold">3</span>
+                    </div>
+                    <div>
+                        <h5>再生</h5>
+                        <p class="text-muted mb-0">画面下部のプレイヤーで音楽を楽しみます</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 検索バーのフォーカス効果
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) {
+        searchInput.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.02)';
+        });
+        
+        searchInput.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+        });
+    }
+});
+</script>
+{% endblock %}

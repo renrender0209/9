@@ -1,0 +1,470 @@
+{% extends "soundcloud/base.html" %}
+
+{% block title %}
+{% if track %}
+{{ track.title }} - {{ track.artist }} | SoundCloud Music
+{% else %}
+SoundCloud Music - プレイヤー
+{% endif %}
+{% endblock %}
+
+{% block styles %}
+<style>
+body {
+    background: #121212;
+    color: #fff;
+}
+
+.navbar-soundcloud {
+    background: rgba(18, 18, 18, 0.95);
+}
+
+.main-container {
+    padding: 0;
+    min-height: calc(100vh - 76px);
+}
+
+.player-layout {
+    display: flex;
+    height: calc(100vh - 76px);
+}
+
+.player-sidebar {
+    width: 240px;
+    background: #000;
+    padding: 1.5rem;
+    border-right: 1px solid #282828;
+}
+
+.player-main {
+    flex: 1;
+    background: linear-gradient(180deg, #1db954 0%, #121212 30%);
+    display: flex;
+    flex-direction: column;
+}
+
+.player-header {
+    padding: 2rem;
+    background: linear-gradient(transparent, rgba(0,0,0,.6));
+}
+
+.track-hero {
+    display: flex;
+    align-items: end;
+    gap: 2rem;
+}
+
+.track-cover {
+    width: 232px;
+    height: 232px;
+    box-shadow: 0 4px 60px rgba(0,0,0,.5);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.track-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.track-cover-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #ff5500, #ff8800);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    color: white;
+}
+
+.track-details h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.track-details .artist {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #b3b3b3;
+    margin-bottom: 0.5rem;
+}
+
+.track-stats-hero {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #b3b3b3;
+    align-items: center;
+}
+
+.player-content {
+    flex: 1;
+    padding: 2rem;
+    background: #121212;
+}
+
+.player-controls-section {
+    margin-bottom: 2rem;
+}
+
+.main-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.control-button {
+    background: none;
+    border: none;
+    color: #b3b3b3;
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.control-button:hover {
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.play-button-large {
+    background: #1db954;
+    color: #000;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.play-button-large:hover {
+    background: #1ed760;
+    transform: scale(1.05);
+}
+
+.embed-container {
+    background: #181818;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.sidebar-section {
+    margin-bottom: 2rem;
+}
+
+.sidebar-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #b3b3b3;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+}
+
+.sidebar-item {
+    color: #b3b3b3;
+    text-decoration: none;
+    padding: 0.5rem 0;
+    display: block;
+    transition: color 0.2s;
+}
+
+.sidebar-item:hover {
+    color: #fff;
+}
+
+.track-info-section {
+    background: #181818;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    text-align: center;
+}
+
+.info-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1db954;
+    display: block;
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: #b3b3b3;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.genre-pill {
+    background: rgba(29, 185, 84, 0.2);
+    color: #1db954;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+    margin: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .player-layout {
+        flex-direction: column;
+    }
+    
+    .player-sidebar {
+        width: 100%;
+        padding: 1rem;
+    }
+    
+    .track-hero {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .track-cover {
+        width: 180px;
+        height: 180px;
+    }
+    
+    .track-details h1 {
+        font-size: 1.5rem;
+    }
+    
+    .player-content {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="player-layout">
+    <!-- サイドバー -->
+    <div class="player-sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">ナビゲーション</div>
+            <a href="{{ url_for('soundcloud.soundcloud_home') }}" class="sidebar-item">
+                <i class="fas fa-home me-2"></i>ホーム
+            </a>
+            <a href="{{ url_for('soundcloud.soundcloud_search') }}" class="sidebar-item">
+                <i class="fas fa-search me-2"></i>検索
+            </a>
+            <a href="{{ url_for('soundcloud.soundcloud_trending') }}" class="sidebar-item">
+                <i class="fas fa-fire me-2"></i>トレンド
+            </a>
+        </div>
+        
+        <div class="sidebar-section">
+            <div class="sidebar-title">プレイリスト</div>
+            <a href="#" class="sidebar-item">
+                <i class="fas fa-plus me-2"></i>プレイリストを作成
+            </a>
+            <a href="#" class="sidebar-item">
+                <i class="fas fa-heart me-2"></i>お気に入り
+            </a>
+        </div>
+    </div>
+    
+    <!-- メインコンテンツ -->
+    <div class="player-main">
+        <!-- ヘッダー -->
+        <div class="player-header">
+            <div class="track-hero">
+                <div class="track-cover">
+                    {% if track and track.artwork_url %}
+                    <img src="{{ track.artwork_url }}" alt="{{ track.title }}">
+                    {% else %}
+                    <div class="track-cover-placeholder">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="track-details">
+                    <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #fff; margin-bottom: 0.5rem;">TRACK</div>
+                    <h1>{{ track.title if track else '楽曲を選択してください' }}</h1>
+                    <div class="artist">{{ track.artist if track else 'アーティスト' }}</div>
+                    
+                    {% if track %}
+                    <div class="track-stats-hero">
+                        {% if track.duration %}
+                        <span>{{ (track.duration // 60) }}:{{ '%02d'|format(track.duration % 60) }}</span>
+                        <span>•</span>
+                        {% endif %}
+                        
+                        {% if track.playback_count %}
+                        <span>{{ '{:,}'.format(track.playback_count) }} 回再生</span>
+                        <span>•</span>
+                        {% endif %}
+                        
+                        {% if track.likes_count %}
+                        <span>{{ '{:,}'.format(track.likes_count) }} いいね</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- コンテンツ -->
+        <div class="player-content">
+            <!-- プレイヤーコントロール -->
+            <div class="player-controls-section">
+                <div class="main-controls">
+                    <button class="play-button-large" onclick="playCurrentTrack()">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="control-button">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <button class="control-button">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="control-button">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- SoundCloud埋め込みプレイヤー -->
+            {% if track_id %}
+            <div class="embed-container">
+                <iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" 
+                        src="{{ embed_url }}">
+                </iframe>
+            </div>
+            {% endif %}
+            
+            <!-- 楽曲情報 -->
+            {% if track %}
+            <div class="track-info-section">
+                <h3 class="mb-3">楽曲情報</h3>
+                
+                <div class="info-grid">
+                    {% if track.duration %}
+                    <div class="info-item">
+                        <span class="info-value">{{ (track.duration // 60) }}:{{ '%02d'|format(track.duration % 60) }}</span>
+                        <div class="info-label">再生時間</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if track.playback_count %}
+                    <div class="info-item">
+                        <span class="info-value">{{ '{:,}'.format(track.playback_count) }}</span>
+                        <div class="info-label">再生回数</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if track.likes_count %}
+                    <div class="info-item">
+                        <span class="info-value">{{ '{:,}'.format(track.likes_count) }}</span>
+                        <div class="info-label">いいね</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if track.created_at %}
+                    <div class="info-item">
+                        <span class="info-value">{{ track.created_at[:4] }}</span>
+                        <div class="info-label">リリース</div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if track.genre %}
+                <div class="mt-3">
+                    <div class="info-label mb-2">ジャンル</div>
+                    <span class="genre-pill">{{ track.genre }}</span>
+                </div>
+                {% endif %}
+                
+                {% if track.description %}
+                <div class="mt-3">
+                    <div class="info-label mb-2">説明</div>
+                    <p class="text-muted">{{ track.description[:200] }}{% if track.description|length > 200 %}...{% endif %}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <!-- 楽曲未選択時 -->
+            <div class="track-info-section text-center">
+                <i class="fab fa-soundcloud fa-4x text-muted mb-3"></i>
+                <h4>楽曲を選択してください</h4>
+                <p class="text-muted mb-4">検索やトレンドページから再生したい楽曲を選んでください</p>
+                
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{{ url_for('soundcloud.soundcloud_search') }}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>検索
+                    </a>
+                    <a href="{{ url_for('soundcloud.soundcloud_trending') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-fire me-2"></i>トレンド
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function playCurrentTrack() {
+    {% if track_id %}
+    // 現在の楽曲を再生
+    const trackId = '{{ track_id }}';
+    const title = '{{ track.title|replace("'", "\\'") if track else "" }}';
+    const artist = '{{ track.artist|replace("'", "\\'") if track else "" }}';
+    const artwork = '{{ track.artwork_url or "" }}';
+    
+    playTrack(trackId, title, artist, artwork);
+    {% else %}
+    // 楽曲が選択されていない場合は検索ページへ
+    window.location.href = "{{ url_for('soundcloud.soundcloud_search') }}";
+    {% endif %}
+}
+
+// キーボードショートカット
+document.addEventListener('keydown', function(e) {
+    if (e.code === 'Space' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        playCurrentTrack();
+    }
+});
+
+// プレイヤー状態の更新
+function updatePlayerState() {
+    const playButton = document.querySelector('.play-button-large i');
+    if (playButton) {
+        // プレイヤーの状態に応じてアイコンを更新
+        // 実際の実装では SoundCloud Widget API を使用
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updatePlayerState();
+});
+</script>
+{% endblock %}
