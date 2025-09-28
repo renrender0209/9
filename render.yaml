@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: youtube-streaming-app
+    name: renrentube
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -16,5 +16,5 @@ services:
           property: connectionString
 
 databases:
-  - name: youtube-app-db
+  - name: renrentube
     plan: free
