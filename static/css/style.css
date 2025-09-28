@@ -1,0 +1,330 @@
+:root {
+    --primary-color: 0 100% 50%; /* YouTube Red #FF0000 */
+    --secondary-color: 0 0% 38%; /* YouTube Gray #606060 */
+    --success-color: 134 61% 41%; /* #28A745 */
+    --warning-color: 45 100% 51%; /* #FFC107 */
+    --danger-color: 0 100% 50%; /* YouTube Red #FF0000 */
+    --info-color: 0 0% 38%; /* YouTube Gray */
+    --light-color: 0 0% 98%; /* #FAFAFA */
+    --dark-color: 0 0% 7%; /* #121212 */
+    --background: 0 0% 100%; /* Pure White #FFFFFF */
+    --surface: 0 0% 100%; /* #FFFFFF */
+    --text-primary: 0 0% 7%; /* Almost Black #121212 */
+    --text-secondary: 0 0% 38%; /* YouTube Gray #606060 */
+    --border-color: 0 0% 90%; /* Light Gray #E5E5E5 */
+}
+
+body {
+    background-color: hsl(var(--background));
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    color: hsl(var(--text-primary));
+    line-height: 1.6;
+}
+
+/* ナビゲーション */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.navbar-dark .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* メインコンテンツ */
+.main-content {
+    margin-top: 76px;
+    padding: 2rem 0;
+    min-height: calc(100vh - 120px);
+}
+
+/* ヒーローセクション */
+.hero-section {
+    padding: 3rem 0;
+    background: linear-gradient(135deg, hsl(var(--primary-color) / 0.1), hsl(var(--info-color) / 0.1));
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+}
+
+.search-container .input-group {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* 特徴セクション */
+.features-section .card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.features-section .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+    padding: 1rem;
+    background-color: hsl(var(--light-color));
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 使用方法セクション */
+.step-number {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: hsl(var(--primary-color));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin: 0 auto 1rem;
+}
+
+/* 検索結果 */
+.video-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+.video-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.video-thumbnail {
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.video-card:hover .video-thumbnail {
+    transform: scale(1.05);
+}
+
+.video-duration {
+    bottom: 8px;
+    right: 8px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.video-title a {
+    color: hsl(var(--text-primary));
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.video-title a:hover {
+    color: hsl(var(--primary-color));
+}
+
+.video-meta {
+    font-size: 0.875rem;
+}
+
+/* 動画プレーヤー */
+.video-player-wrapper {
+    background-color: hsl(var(--dark-color));
+    border-radius: 0.5rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.video-js,
+#videoPlayer {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16/9;
+    -webkit-playsinline: true;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}
+
+/* iOS Safari向けの最適化 */
+@supports (-webkit-appearance: none) {
+    #videoPlayer {
+        -webkit-appearance: none;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+}
+
+/* iOSでのフルスクリーン再生対応 */
+#videoPlayer::-webkit-media-controls-fullscreen-button {
+    display: block;
+}
+
+#videoPlayer::-webkit-media-controls {
+    overflow: visible !important;
+}
+
+.video-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: hsl(var(--text-primary));
+    line-height: 1.3;
+    margin-bottom: 1rem;
+}
+
+.video-stats {
+    padding: 1rem 0;
+    border-bottom: 1px solid hsl(var(--border-color));
+}
+
+.channel-info {
+    border: 1px solid hsl(var(--border-color));
+}
+
+.description-content {
+    max-height: 200px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.description-content.expanded {
+    max-height: none;
+}
+
+.quality-selector .form-select {
+    border: 1px solid hsl(var(--border-color));
+}
+
+.quality-selector .form-select:focus {
+    border-color: hsl(var(--primary-color));
+    box-shadow: 0 0 0 0.2rem hsl(var(--primary-color) / 0.25);
+}
+
+/* サイドバー */
+.sidebar {
+    position: sticky;
+    top: 100px;
+}
+
+/* エラー・空の状態 */
+.empty-state,
+.error-state {
+    padding: 3rem 1rem;
+}
+
+.empty-state i,
+.error-state i {
+    opacity: 0.6;
+}
+
+/* フッター */
+.footer {
+    background-color: hsl(var(--light-color));
+    border-top: 1px solid hsl(var(--border-color));
+    margin-top: 2rem;
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 768px) {
+    .main-content {
+        margin-top: 66px;
+        padding: 1rem 0;
+    }
+    
+    .hero-section {
+        padding: 2rem 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .video-title {
+        font-size: 1.25rem;
+    }
+    
+    .sidebar {
+        position: static;
+        margin-top: 2rem;
+    }
+    
+    .search-container .input-group {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .video-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .hero-section h1 {
+        font-size: 1.75rem;
+    }
+    
+    .features-section .card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* カスタムスクロールバー */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: hsl(var(--light-color));
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsl(var(--secondary-color));
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary-color));
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card,
+.alert {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* フォーカス状態の改善 */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 0.2rem hsl(var(--primary-color) / 0.25);
+}
+
+/* 追加のユーティリティクラス */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.shadow-hover {
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.shadow-hover:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
