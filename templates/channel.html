@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if channel_info %}{{ channel_info.author }} - れんれんtube{% else %}チャンネル - れんれんtube{% endif %}
+{% endblock %}
+
+{% block og_title %}
+{% if channel_info %}{{ channel_info.author }} - れんれんtube{% else %}チャンネル - れんれんtube{% endif %}
+{% endblock %}
+
+{% block og_description %}
+{% if channel_info %}{{ channel_info.author }}のチャンネル - れんれんtubeで高画質動画を視聴。{% if channel_info.description %}{{ (channel_info.description[:100]) }}{% endif %}{% else %}れんれんtubeのチャンネルページ - 日本の動画コンテンツを高画質で配信{% endif %}
+{% endblock %}
+
+{% block og_image %}
+{% if channel_info and channel_info.authorThumbnails %}{{ channel_info.authorThumbnails[0].url }}{% else %}{{ request.url_root.replace('http://', 'https://').replace(':5000', '.replit.app') }}static/og-image.jpg{% endif %}
+{% endblock %}
+
+{% block og_image_alt %}
+{% if channel_info %}{{ channel_info.author }}のチャンネル画像{% else %}れんれんtube{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if channel_info %}
+<div class="channel-page">
+    <!-- チャンネルヘッダー -->
+    <div class="channel-header mb-4">
+        {% if channel_info.authorBanners and channel_info.authorBanners[0].url %}
+        <div class="channel-banner mb-3">
+            <img src="{{ channel_info.authorBanners[0].url }}" 
+                 alt="{{ channel_info.author }}" 
+                 class="img-fluid w-100" 
+                 style="max-height: 200px; object-fit: cover; border-radius: 0.5rem;">
+        </div>
+        {% endif %}
+        
+        <div class="channel-info p-4 bg-light rounded">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    {% if channel_info.authorThumbnails and channel_info.authorThumbnails[0].url %}
+                    <img src="{{ channel_info.authorThumbnails[0].url }}" 
+                         alt="{{ channel_info.author }}" 
+                         class="rounded-circle" 
+                         width="80" height="80">
+                    {% else %}
+                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" 
+                         style="width: 80px; height: 80px;">
+                        <i class="fas fa-user text-white fa-2x"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col">
+                    <h1 class="channel-name mb-2">{{ channel_info.author }}</h1>
+                    <div class="channel-stats mb-2">
+                        {% if channel_info.subCount %}
+                        <span class="badge bg-primary me-2">
+                            <i class="fas fa-users me-1"></i>
+                            {{ '{:,}'.format(channel_info.subCount) }} 登録者
+                        </span>
+                        {% endif %}
+                        {% if channel_info.videoCount %}
+                        <span class="badge bg-secondary me-2">
+                            <i class="fas fa-video me-1"></i>
+                            {{ '{:,}'.format(channel_info.videoCount) }} 動画
+                        </span>
+                        {% endif %}
+                        {% if channel_info.totalViews %}
+                        <span class="badge bg-info">
+                            <i class="fas fa-eye me-1"></i>
+                            {{ '{:,}'.format(channel_info.totalViews) }} 総再生回数
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if channel_info.joined %}
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        チャンネル開設: {{ channel_info.joined // 1000000000 | int | timestamp_to_date }}
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if channel_info.description %}
+            <div class="channel-description mt-3">
+                <h6>チャンネル概要</h6>
+                <div class="description-content p-3 bg-white rounded">
+                    <div class="description-text" id="channelDescription">
+                        {{ channel_info.description|replace('\n', '<br>')|safe }}
+                    </div>
+                    {% if channel_info.description|length > 300 %}
+                    <button class="btn btn-link btn-sm p-0 mt-2" id="toggleChannelDescription">
+                        もっと見る
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 動画一覧ヘッダー -->
+    <div class="videos-header mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3><i class="fas fa-video me-2"></i>動画一覧</h3>
+            <div class="sort-controls">
+                <select class="form-select form-select-sm" id="sortSelect" onchange="changeSortOrder()">
+                    <option value="newest" {{ 'selected' if sort == 'newest' else '' }}>新しい順</option>
+                    <option value="oldest" {{ 'selected' if sort == 'oldest' else '' }}>古い順</option>
+                    <option value="popular" {{ 'selected' if sort == 'popular' else '' }}>人気順</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- プレイリスト別動画表示 -->
+    {% if playlists %}
+    {% for playlist in playlists %}
+    <div class="playlist-section mb-5">
+        <!-- プレイリストヘッダー -->
+        <div class="playlist-header mb-3 p-3 bg-light rounded">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-list me-2 text-primary"></i>
+                    {{ playlist.name }}
+                </h4>
+                <span class="badge bg-primary">
+                    {{ playlist.video_count }} 件の動画
+                </span>
+            </div>
+        </div>
+        
+        <!-- プレイリスト内動画一覧 -->
+        <div class="playlist-videos">
+            <div class="row">
+                {% for video in playlist.videos %}
+                <div class="col-md-6 col-lg-4 col-xl-3 mb-4">
+                    <div class="card h-100 video-card">
+                        <div onclick="watchVideo('{{ video.videoId }}')" style="cursor: pointer;" class="text-decoration-none">
+                            <div class="video-thumbnail position-relative">
+                                {% if video.videoThumbnails %}
+                                <img src="{{ video.videoThumbnails[0].url }}" 
+                                     class="card-img-top" 
+                                     alt="{{ video.title }}"
+                                     style="height: 180px; object-fit: cover;">
+                                {% else %}
+                                <div class="placeholder-thumbnail bg-secondary d-flex align-items-center justify-content-center"
+                                     style="height: 180px;">
+                                    <i class="fas fa-video text-white fa-2x"></i>
+                                </div>
+                                {% endif %}
+                                
+                                {% if video.lengthSeconds %}
+                                <span class="video-duration position-absolute bottom-0 end-0 bg-dark text-white px-2 py-1 rounded-start">
+                                    {{ video.lengthSeconds|format_duration_japanese }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h6 class="card-title video-title">
+                                <span onclick="watchVideo('{{ video.videoId }}')" style="cursor: pointer;" class="text-decoration-none">
+                                    {{ video.title }}
+                                </span>
+                            </h6>
+                            
+                            <div class="video-meta">
+                                <p class="card-text small text-muted mb-1">
+                                    <i class="fas fa-eye me-1"></i>
+                                    {{ video.viewCount|format_view_count_with_suffix }}
+                                </p>
+                                
+                                {% if video.publishedText %}
+                                <p class="card-text small text-muted mb-0">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ video.publishedText|format_published_japanese }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    {% elif videos %}
+    <!-- フォールバック: 通常の動画一覧表示 -->
+    <div class="videos-grid">
+        <div class="row">
+            {% for video in videos %}
+            <div class="col-md-6 col-lg-4 col-xl-3 mb-4">
+                <div class="card h-100 video-card">
+                    <div onclick="watchVideo('{{ video.videoId }}')" style="cursor: pointer;" class="text-decoration-none">
+                        <div class="video-thumbnail position-relative">
+                            {% if video.videoThumbnails %}
+                            <img src="{{ video.videoThumbnails[0].url }}" 
+                                 class="card-img-top" 
+                                 alt="{{ video.title }}"
+                                 style="height: 180px; object-fit: cover;">
+                            {% else %}
+                            <div class="placeholder-thumbnail bg-secondary d-flex align-items-center justify-content-center"
+                                 style="height: 180px;">
+                                <i class="fas fa-video text-white fa-2x"></i>
+                            </div>
+                            {% endif %}
+                            
+                            {% if video.lengthSeconds %}
+                            <span class="video-duration position-absolute bottom-0 end-0 bg-dark text-white px-2 py-1 rounded-start">
+                                {{ video.lengthSeconds|format_duration_japanese }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <h6 class="card-title video-title">
+                            <span onclick="watchVideo('{{ video.videoId }}')" style="cursor: pointer;" class="text-decoration-none">
+                                {{ video.title }}
+                            </span>
+                        </h6>
+                        
+                        <div class="video-meta">
+                            <p class="card-text small text-muted mb-1">
+                                <i class="fas fa-eye me-1"></i>
+                                {{ video.viewCount|format_view_count_with_suffix }}
+                            </p>
+                            
+                            {% if video.publishedText %}
+                            <p class="card-text small text-muted mb-0">
+                                <i class="fas fa-clock me-1"></i>
+                                {{ video.publishedText|format_published_japanese }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ページネーション -->
+    {% if total_pages > 1 %}
+    <div class="pagination-wrapper mt-4">
+        <nav aria-label="ページネーション">
+            <ul class="pagination justify-content-center">
+                {% if current_page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('channel', channel_id=channel_info.authorId, page=current_page-1, sort=sort) }}">
+                        <i class="fas fa-chevron-left"></i> 前のページ
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% set start_page = [1, current_page - 2]|max %}
+                {% set end_page = [total_pages, current_page + 2]|min %}
+                
+                {% if start_page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('channel', channel_id=channel_info.authorId, page=1, sort=sort) }}">1</a>
+                </li>
+                {% if start_page > 2 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+                {% endif %}
+                
+                {% for page_num in range(start_page, end_page + 1) %}
+                <li class="page-item {{ 'active' if page_num == current_page else '' }}">
+                    {% if page_num == current_page %}
+                    <span class="page-link">{{ page_num }}</span>
+                    {% else %}
+                    <a class="page-link" href="{{ url_for('channel', channel_id=channel_info.authorId, page=page_num, sort=sort) }}">{{ page_num }}</a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+                
+                {% if end_page < total_pages %}
+                {% if end_page < total_pages - 1 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('channel', channel_id=channel_info.authorId, page=total_pages, sort=sort) }}">{{ total_pages }}</a>
+                </li>
+                {% endif %}
+                
+                {% if current_page < total_pages %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('channel', channel_id=channel_info.authorId, page=current_page+1, sort=sort) }}">
+                        次のページ <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <div class="text-center mt-2">
+            <small class="text-muted">
+                {{ current_page }} / {{ total_pages }} ページ (全 {{ channel_info.videoCount }} 動画)
+            </small>
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-video-slash fa-3x text-muted mb-3"></i>
+        <h4>動画が見つかりません</h4>
+        <p class="text-muted">このチャンネルには動画が投稿されていないか、読み込みエラーが発生しました。</p>
+    </div>
+    {% endif %}
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <div class="error-state">
+        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+        <h4>チャンネルを読み込めません</h4>
+        <p class="text-muted mb-4">
+            チャンネル情報を取得できませんでした。
+        </p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">
+            <i class="fas fa-home me-2"></i>ホームに戻る
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// チャンネルページ：最速視聴モード対応の動画視聴関数
+function watchVideo(videoId) {
+    // base.htmlのグローバルviewMode設定を取得
+    const currentViewMode = localStorage.getItem('viewMode') || 'normal';
+    
+    console.log('🎬 チャンネルページから動画視聴:', videoId, '現在のモード:', currentViewMode);
+    
+    if (currentViewMode === 'fast') {
+        // 最速視聴モード：フルスクリーンオーバーレイで開く
+        console.log('⚡ 最速視聴モードで開始');
+        openFastView(videoId);
+    } else {
+        // 通常モード：動画ページに遷移
+        console.log('🎥 通常モードで動画ページに遷移');
+        window.location.href = `/watch?v=${videoId}`;
+    }
+}
+
+// 現在YouTube Education モードが使用されているかを検出
+function isCurrentlyUsingYouTubeEducation() {
+    // URLパラメータでedu=1が指定されているかチェック
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edu') === '1') {
+        return true;
+    }
+    
+    // ローカルストレージの設定をチェック
+    const eduMode = localStorage.getItem('youtube_education_mode');
+    if (eduMode === 'true') {
+        return true;
+    }
+    
+    return false;
+}
+
+function changeSortOrder() {
+    const sortSelect = document.getElementById('sortSelect');
+    const newSort = sortSelect.value;
+    const url = new URL(window.location);
+    url.searchParams.set('sort', newSort);
+    url.searchParams.set('page', '1'); // ソート変更時はページを1に戻す
+    window.location.href = url.toString();
+}
+
+// チャンネル説明の展開/折りたたみ
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButton = document.getElementById('toggleChannelDescription');
+    const descriptionText = document.getElementById('channelDescription');
+    
+    if (toggleButton && descriptionText) {
+        const fullText = descriptionText.innerHTML;
+        const shortText = fullText.substring(0, 300) + '...';
+        
+        descriptionText.innerHTML = shortText;
+        
+        toggleButton.addEventListener('click', function() {
+            if (this.textContent === 'もっと見る') {
+                descriptionText.innerHTML = fullText;
+                this.textContent = '閉じる';
+            } else {
+                descriptionText.innerHTML = shortText;
+                this.textContent = 'もっと見る';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

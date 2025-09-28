@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}{{ query }} - 検索結果 - れんれんtube{% endblock %}
+
+{% block og_title %}{{ query }} - 検索結果 - れんれんtube{% endblock %}
+
+{% block og_description %}「{{ query }}」の検索結果 - れんれんtubeで高画質動画を検索・視聴。豊富な日本語コンテンツから最適な動画を見つけましょう。{% endblock %}
+
+{% block content %}
+<div style="padding: 24px 16px;">
+    <!-- 検索結果ヘッダー -->
+    <div style="margin-bottom: 24px;">
+        <p id="resultCount" style="color: var(--yt-spec-text-secondary); font-size: 14px; margin: 0;">
+            {% if results or channels %}
+            約 {{ (results|length + channels|length if channels else results|length) }} 件の結果
+            {% else %}
+            検索中...
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- ローディングスピナー -->
+    <div id="loadingSpinner" style="display: {% if results or channels %}none{% else %}block{% endif %}; text-align: center; padding: 60px;">
+        <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #065fd4; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 16px; color: #606060;">検索中...</p>
+    </div>
+
+    <!-- チャンネル検索結果 -->
+    <div id="channelResults" style="margin-bottom: 32px; {% if not channels %}display: none;{% endif %}">
+        {% if channels %}
+        {% for channel in channels %}
+        <div style="display: flex; padding: 16px 0; border-bottom: 1px solid var(--yt-spec-outline);">
+            <div style="margin-right: 16px;">
+                {% if channel.authorThumbnails %}
+                <img src="{{ channel.authorThumbnails[0].url }}" 
+                     style="width: 136px; height: 136px; border-radius: 50%; object-fit: cover;"
+                     alt="{{ channel.author }}">
+                {% else %}
+                <div style="width: 136px; height: 136px; border-radius: 50%; background: #ccc; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user" style="font-size: 48px; color: #999;"></i>
+                </div>
+                {% endif %}
+            </div>
+            <div style="flex: 1;">
+                <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 500;">
+                    <a href="{{ url_for('channel', channel_id=channel.authorId) }}" 
+                       style="color: var(--yt-spec-text-primary); text-decoration: none;">
+                        {{ channel.author }}
+                    </a>
+                </h3>
+                <div style="color: var(--yt-spec-text-secondary); font-size: 12px; margin-bottom: 8px;">
+                    {% if channel.subCount and channel.subCount > 0 %}
+                    登録者 {{ '{:,}'.format(channel.subCount) }} 人
+                    {% else %}
+                    登録者数不明
+                    {% endif %}
+                    {% if channel.videoCount and channel.videoCount > 0 %}
+                    • 動画 {{ '{:,}'.format(channel.videoCount) }} 本
+                    {% endif %}
+                </div>
+                {% if channel.description %}
+                <p style="color: var(--yt-spec-text-secondary); font-size: 12px; margin: 0; line-height: 1.5;">
+                    {{ channel.description[:150] }}{% if channel.description|length > 150 %}...{% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- 動画検索結果 -->
+    <div id="videoResults" class="video-grid" {% if not results %}style="display: none;"{% endif %}>
+        {% if results %}
+        {% for video in results %}
+        <div class="video-card" onclick="watchVideo('{{ video.videoId }}')" style="cursor: pointer;">
+            <div style="position: relative;">
+                <img src="https://img.youtube.com/vi/{{ video.videoId }}/maxresdefault.jpg" 
+                     class="video-thumbnail" alt="{{ video.title }}"
+                     onerror="handleThumbnailError(this, '{{ video.videoId }}')"
+                     loading="lazy">
+                
+                {% if video.lengthSeconds %}
+                    {% if video.lengthSeconds == 0 %}
+                    <span class="video-duration" style="background: #ff0000; color: white;">
+                        ライブ
+                    </span>
+                    {% else %}
+                    <span class="video-duration">
+                        {{ video.lengthSeconds|format_duration_japanese }}
+                    </span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <div class="video-info">
+                <div class="video-title">
+                    <a href="{{ url_for('watch', v=video.videoId) }}">{{ video.title }}</a>
+                </div>
+                
+                <div class="video-meta">
+                    <a href="{{ url_for('channel', channel_id=video.authorId) }}" 
+                       class="channel-link">{{ video.author }}</a>
+                    <br>
+                    {% if video.viewCount and video.viewCount > 0 %}
+                    {{ video.viewCount|format_view_count_with_suffix }}
+                    {% else %}
+                    視聴回数不明
+                    {% endif %}
+                    {% if video.publishedText %} • {{ video.publishedText|format_published_japanese }}{% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- ページネーション -->
+    {% if results and results|length > 0 and total_pages > 1 %}
+    <nav aria-label="検索結果ページネーション" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('search', q=query, page=page-1) }}">
+                    <i class="fas fa-chevron-left"></i> 前のページ
+                </a>
+            </li>
+            {% endif %}
+            
+            {% set start_page = [1, page - 2]|max %}
+            {% set end_page = [total_pages, page + 2]|min %}
+            
+            {% if start_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('search', q=query, page=1) }}">1</a>
+            </li>
+            {% if start_page > 2 %}
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+            {% endif %}
+            {% endif %}
+            
+            {% for page_num in range(start_page, end_page + 1) %}
+            <li class="page-item {{ 'active' if page_num == page else '' }}">
+                {% if page_num == page %}
+                <span class="page-link">{{ page_num }}</span>
+                {% else %}
+                <a class="page-link" href="{{ url_for('search', q=query, page=page_num) }}">{{ page_num }}</a>
+                {% endif %}
+            </li>
+            {% endfor %}
+            
+            {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+            {% endif %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('search', q=query, page=total_pages) }}">{{ total_pages }}</a>
+            </li>
+            {% endif %}
+            
+            {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('search', q=query, page=page+1) }}">
+                    次のページ <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+        
+        <div class="text-center mt-2">
+            <small class="text-muted">
+                {{ page }} / {{ total_pages }} ページ (約 {{ total_results }} 件の結果)
+            </small>
+        </div>
+    </nav>
+    {% else %}
+    <!-- 検索結果なし -->
+    <div class="text-center py-5">
+        <div class="empty-state">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h4>検索結果が見つかりません</h4>
+            <p class="text-muted mb-4">
+                「{{ query }}」に一致する動画が見つかりませんでした。<br>
+                別のキーワードでお試しください。
+            </p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="fas fa-home me-2"></i>ホームに戻る
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+// Ajax検索機能
+function performAjaxSearch(query, page = 1) {
+    if (!query.trim()) return;
+    
+    // ローディング表示
+    document.getElementById('loadingSpinner').style.display = 'block';
+    document.getElementById('channelResults').style.display = 'none';
+    document.getElementById('videoResults').style.display = 'none';
+    document.getElementById('resultCount').textContent = '検索中...';
+    
+    // Ajax リクエスト
+    fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`)
+        .then(response => response.json())
+        .then(data => {
+            updateSearchResults(data);
+        })
+        .catch(error => {
+            console.error('検索エラー:', error);
+            showSearchError();
+        });
+}
+
+function updateSearchResults(data) {
+    // ローディング非表示
+    document.getElementById('loadingSpinner').style.display = 'none';
+    
+    // 結果数表示
+    const totalResults = (data.videos ? data.videos.length : 0) + (data.channels ? data.channels.length : 0);
+    document.getElementById('resultCount').textContent = `約 ${totalResults} 件の結果`;
+    
+    // チャンネル結果表示
+    if (data.channels && data.channels.length > 0) {
+        displayChannels(data.channels);
+    }
+    
+    // 動画結果表示
+    if (data.videos && data.videos.length > 0) {
+        displayVideos(data.videos);
+    } else {
+        showNoResults();
+    }
+}
+
+function displayVideos(videos) {
+    const videoContainer = document.getElementById('videoResults');
+    let videoHtml = '';
+    
+    videos.forEach(video => {
+        const durationText = video.lengthSeconds ? (video.lengthSeconds === 0 ? 'ライブ' : formatDuration(video.lengthSeconds)) : '';
+        videoHtml += `
+            <div class="video-card" onclick="watchVideo('${video.videoId}')" style="cursor: pointer;">
+                <div style="position: relative;">
+                    <img src="https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg" 
+                         class="video-thumbnail" alt="${video.title}"
+                         onerror="handleThumbnailError(this, '${video.videoId}')"
+                         loading="lazy">
+                    
+                    ${durationText ? `<span class="video-duration"${video.lengthSeconds === 0 ? ' style="background: #ff0000; color: white;"' : ''}>${durationText}</span>` : ''}
+                </div>
+                
+                <div class="video-info">
+                    <div class="video-title">
+                        <a href="/watch?v=${video.videoId}">${video.title}</a>
+                    </div>
+                    
+                    <div class="video-meta">
+                        <a href="/channel/${video.authorId}" class="channel-link">${video.author}</a>
+                        <br>
+                        ${video.viewCount ? `${formatViewCount(video.viewCount)}回視聴` : '視聴回数不明'}
+                        ${video.publishedText ? ` • ${video.publishedText}` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    videoContainer.innerHTML = videoHtml;
+    videoContainer.style.display = 'block';
+}
+
+function showSearchError() {
+    document.getElementById('loadingSpinner').style.display = 'none';
+    document.getElementById('resultCount').textContent = '検索エラーが発生しました';
+}
+
+function showNoResults() {
+    const videoContainer = document.getElementById('videoResults');
+    videoContainer.innerHTML = `
+        <div style="text-align: center; padding: 60px;">
+            <i class="fas fa-search" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+            <h4>検索結果が見つかりません</h4>
+            <p style="color: #606060;">別のキーワードでお試しください。</p>
+        </div>
+    `;
+    videoContainer.style.display = 'block';
+}
+
+// ヘルパー関数
+function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+        return minutes > 0 ? `${hours}時間${minutes}分` : `${hours}時間`;
+    } else if (minutes > 0) {
+        return secs > 0 ? `${minutes}分${secs}秒` : `${minutes}分`;
+    } else {
+        return `${secs}秒`;
+    }
+}
+
+function formatViewCount(count) {
+    if (count >= 100000000) {
+        const oku = Math.floor(count / 100000000);
+        const man = Math.floor((count % 100000000) / 10000);
+        return man > 0 ? `${oku}億${man}万` : `${oku}億`;
+    } else if (count >= 10000) {
+        const man = Math.floor(count / 10000);
+        const remainder = count % 10000;
+        return remainder > 0 ? `${man}万${remainder.toLocaleString()}` : `${man}万`;
+    } else {
+        return count.toLocaleString();
+    }
+}
+
+// ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('q');
+    
+    // クエリがある場合で結果がない場合はAjax検索を実行
+    if (query && !document.querySelector('.video-card')) {
+        performAjaxSearch(query);
+    }
+});
+</script>
+
+{% endblock %}

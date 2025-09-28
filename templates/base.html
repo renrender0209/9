@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}れんれんtube{% endblock %}</title>
+    
+    <!-- ファビコン -->
+    <link rel="icon" type="image/avif" href="{{ url_for('static', filename='logo.avif') }}">
+    <link rel="icon" type="image/avif" sizes="32x32" href="{{ url_for('static', filename='logo.avif') }}">
+    <link rel="icon" type="image/avif" sizes="16x16" href="{{ url_for('static', filename='logo.avif') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.avif') }}">
+    
+    <!-- SNS共有用メタタグ -->
+    {% block meta_tags %}
+    <meta property="og:site_name" content="れんれんtube">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}れんれんtube{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}日本の動画を高画質で視聴できる動画ストリーミングサイト「れんれんtube」{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ request.url_root.replace('http://', 'https://').replace(':5000', '.replit.app') }}static/og-image.jpg{% endblock %}">
+    <meta property="og:image:alt" content="{% block og_image_alt %}れんれんtube{% endblock %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:url" content="{{ request.url.replace('http://', 'https://').replace(':5000', '.replit.app') }}">
+    <meta property="og:locale" content="ja_JP">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@renrentube">
+    <meta name="twitter:title" content="{% block twitter_title %}{{ self.og_title() }}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{{ self.og_description() }}{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ self.og_image() }}{% endblock %}">
+    <meta name="twitter:image:alt" content="{{ self.og_image_alt() }}">
+    
+    <!-- 追加のメタタグ -->
+    <meta name="description" content="{{ self.og_description() }}">
+    <meta name="keywords" content="動画,ストリーミング,YouTube,れんれんtube,日本">
+    <meta name="author" content="れんれんtube">
+    {% endblock %}
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- YouTubeライクなCSS -->
+    <style>
+        :root {
+            --yt-spec-base-background: #ffffff;
+            --yt-spec-raised-background: #ffffff;
+            --yt-spec-menu-background: #ffffff;
+            --yt-spec-inverted-background: #0f0f0f;
+            --yt-spec-outline: rgba(0, 0, 0, 0.1);
+            --yt-spec-text-primary: #0f0f0f;
+            --yt-spec-text-secondary: #606060;
+            --yt-spec-red: #ff0000;
+            --yt-spec-brand-button-text: #065fd4;
+        }
+
+        body {
+            font-family: Roboto, Arial, sans-serif;
+            background-color: var(--yt-spec-base-background);
+            color: var(--yt-spec-text-primary);
+            margin: 0;
+            padding: 0;
+            line-height: 1.4;
+        }
+
+        /* YouTubeヘッダー */
+        .youtube-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background-color: var(--yt-spec-base-background);
+            border-bottom: 1px solid var(--yt-spec-outline);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 2020;
+            box-sizing: border-box;
+        }
+
+        .youtube-logo {
+            display: flex;
+            align-items: center;
+            margin-right: 40px;
+            text-decoration: none;
+            color: var(--yt-spec-text-primary);
+        }
+
+        .youtube-logo i {
+            color: var(--yt-spec-red);
+            font-size: 20px;
+            margin-right: 6px;
+        }
+
+        .youtube-logo span {
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+        }
+
+        /* YouTubeライクな検索バー */
+        .youtube-search {
+            display: flex;
+            flex: 1;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .search-container {
+            display: flex;
+            flex: 1;
+            height: 40px;
+        }
+
+        .search-input {
+            flex: 1;
+            border: 1px solid #ccc;
+            border-right: none;
+            border-radius: 40px 0 0 40px;
+            padding: 0 16px;
+            font-size: 16px;
+            outline: none;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input:focus {
+            border-color: var(--yt-spec-brand-button-text);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-button {
+            width: 64px;
+            background-color: #f8f9fa;
+            border: 1px solid #ccc;
+            border-radius: 0 40px 40px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-button:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            margin-top: 56px;
+            min-height: calc(100vh - 56px);
+        }
+
+        /* 動画カード */
+        .video-card {
+            background: transparent;
+            border: none;
+            margin-bottom: 24px;
+            cursor: pointer;
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+
+        .video-duration {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .video-info {
+            padding: 12px 0 0;
+        }
+
+        .video-title {
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.3;
+            margin: 0 0 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .video-title a {
+            color: var(--yt-spec-text-primary);
+            text-decoration: none;
+        }
+
+        .video-title a:hover {
+            color: var(--yt-spec-text-primary);
+        }
+
+        .video-meta {
+            color: var(--yt-spec-text-secondary);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .channel-link {
+            color: var(--yt-spec-text-secondary);
+            text-decoration: none;
+        }
+
+        .channel-link:hover {
+            color: var(--yt-spec-text-primary);
+        }
+
+        /* トレンドセクション */
+        .trending-header {
+            padding: 24px 0 16px;
+            border-bottom: 1px solid var(--yt-spec-outline);
+            margin-bottom: 24px;
+        }
+
+        .trending-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--yt-spec-text-primary);
+            margin: 0;
+        }
+
+        /* レスポンシブ */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+            padding: 24px 16px;
+        }
+
+        @media (max-width: 768px) {
+            .video-grid {
+                grid-template-columns: 1fr;
+                padding: 16px 8px;
+            }
+        }
+
+        /* ページネーション */
+        .pagination {
+            justify-content: center;
+            margin: 32px 0;
+        }
+
+        .page-link {
+            color: var(--yt-spec-brand-button-text);
+            border-color: var(--yt-spec-outline);
+        }
+
+        .page-item.active .page-link {
+            background-color: var(--yt-spec-brand-button-text);
+            border-color: var(--yt-spec-brand-button-text);
+        }
+
+        /* ヘッダーアクション */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            margin-left: 16px;
+        }
+
+        .shorts-link {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: var(--yt-spec-text-primary);
+            border-radius: 18px;
+            transition: background-color 0.1s;
+        }
+
+        .shorts-link:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--yt-spec-text-primary);
+        }
+
+        .shorts-link i {
+            margin-right: 6px;
+            font-size: 16px;
+        }
+
+        .shorts-link span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .shorts-link span {
+                display: none;
+            }
+        }
+
+        /* 設定ボタン */
+        .settings-btn {
+            border: none !important;
+            padding: 8px 12px !important;
+            border-radius: 50% !important;
+            transition: background-color 0.1s;
+        }
+
+        .settings-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05) !important;
+        }
+
+        /* 最速視聴モード用スタイル */
+        .fast-view-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fast-view-container {
+            width: 90%;
+            max-width: 1200px;
+            height: 90%;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fast-view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+        }
+
+        .fast-view-title {
+            color: white;
+            margin: 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .fast-view-close {
+            color: white !important;
+            border: none !important;
+            padding: 4px 8px !important;
+            border-radius: 4px !important;
+        }
+
+        .fast-view-close:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .fast-view-content {
+            flex: 1;
+            position: relative;
+        }
+
+        .fast-view-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* 設定モーダルスタイル */
+        .setting-section {
+            margin-bottom: 24px;
+        }
+
+        .setting-section h6 {
+            color: var(--yt-spec-text-primary);
+            font-weight: 500;
+        }
+
+        .btn-outline-primary.active {
+            background-color: var(--yt-spec-brand-button-text) !important;
+            border-color: var(--yt-spec-brand-button-text) !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- YouTubeライクなヘッダー -->
+    <header class="youtube-header">
+        <a href="{{ url_for('index') }}" class="youtube-logo">
+            <i class="fab fa-youtube"></i>
+            <span>YouTube</span>
+        </a>
+        
+        <form class="youtube-search" action="{{ url_for('search') }}" method="GET">
+            <div class="search-container">
+                <input type="text" name="q" class="search-input" 
+                       placeholder="検索" 
+                       value="{{ request.args.get('q', '') }}">
+                <button type="submit" class="search-button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+        
+        <div class="header-actions">
+            <!-- 設定ボタン -->
+            <button class="btn btn-link settings-btn" onclick="openSettingsModal()" title="設定">
+                <i class="fas fa-cog text-secondary fs-5"></i>
+            </button>
+            
+            <!-- ユーザーメニューを削除 -->
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        {% if error %}
+        <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+            {{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 設定モーダル -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="settingsModalLabel">
+                        <i class="fas fa-cog me-2"></i>設定
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-section">
+                        <h6 class="mb-3"><i class="fas fa-play-circle me-2"></i>動画視聴モード</h6>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-primary" id="fastModeBtn" onclick="setViewMode('fast')">
+                                <i class="fas fa-bolt me-2"></i>最速で動画を見る
+                                <small class="d-block text-muted">概要欄、コメント欄、タイトル、関連動画など動画以外は表示されません</small>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="normalModeBtn" onclick="setViewMode('normal')">
+                                <i class="fas fa-eye me-2"></i>通常で見る
+                                <small class="d-block text-muted">すべての情報を表示します</small>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="setting-section">
+                        <h6 class="mb-3"><i class="fas fa-repeat me-2"></i>動画ループ</h6>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="loopToggle" onchange="setLoopMode(this.checked)">
+                            <label class="form-check-label" for="loopToggle">
+                                動画をループする
+                                <small class="d-block text-muted">動画が終了したら自動で最初から再生します</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最速視聴モード用オーバーレイ -->
+    <div id="fastViewOverlay" class="fast-view-overlay" style="display: none;">
+        <div class="fast-view-container">
+            <div class="fast-view-header">
+                <h5 class="fast-view-title">最速視聴モード</h5>
+                <button class="btn btn-link fast-view-close" onclick="closeFastView()">
+                    <i class="fas fa-times fs-4"></i>
+                </button>
+            </div>
+            <div class="fast-view-content">
+                <iframe id="fastViewFrame" src="" frameborder="0" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 共通JavaScript関数 -->
+    <script>
+        // サムネイル画像エラーハンドリング
+        function handleThumbnailError(img, videoId) {
+            const fallbackUrls = [
+                `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                `https://img.youtube.com/vi/${videoId}/default.jpg`,
+                `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjhGOUZBIi8+CjxwYXRoIGQ9Ik0xNjAgOTBMMTQwIDEwNVYxMDBIMTI1VjgwSDEzNVY3NUwxNjAgOTBaIiBmaWxsPSIjNjA2MDYwIi8+CjwvZGc+`
+            ];
+            
+            const currentSrc = img.src;
+            const nextFallback = fallbackUrls.find(url => url !== currentSrc);
+            
+            if (nextFallback) {
+                img.src = nextFallback;
+                // 最後のフォールバックの場合、再度エラーが発生しないようにする
+                if (nextFallback === fallbackUrls[fallbackUrls.length - 1]) {
+                    img.onerror = null;
+                }
+            } else {
+                // すべてのフォールバックが失敗した場合
+                img.onerror = null;
+                img.alt = '画像を読み込めませんでした';
+            }
+        }
+
+        // 自動再更新機能（サーバーエラー時）
+        function handleServerError() {
+            let retryCount = 0;
+            const maxRetries = 3;
+            const retryDelay = 5000; // 5秒
+            
+            function attemptRefresh() {
+                if (retryCount < maxRetries) {
+                    retryCount++;
+                    console.log(`サーバーエラー検出: ${retryCount}/${maxRetries} 回目の再試行を開始...`);
+                    
+                    // ユーザーに通知
+                    showErrorToast(`接続エラーが発生しました。${retryCount}/${maxRetries} 回目の再試行中...`);
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, retryDelay);
+                } else {
+                    showErrorToast('サーバーに接続できません。後でもう一度お試しください。');
+                }
+            }
+            
+            // ページエラーを検出
+            window.addEventListener('error', function(e) {
+                if (e.message.includes('server') || e.message.includes('network')) {
+                    attemptRefresh();
+                }
+            });
+            
+            // fetch エラーを検出
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+                return originalFetch.apply(this, args)
+                    .catch(error => {
+                        if (error.name === 'TypeError' && error.message.includes('network')) {
+                            attemptRefresh();
+                        }
+                        throw error;
+                    });
+            };
+        }
+
+        // エラートースト表示
+        function showErrorToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-danger border-0';
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-exclamation-triangle me-2"></i>${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                container.style.zIndex = '9999';
+                document.body.appendChild(container);
+            }
+            container.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
+
+        // 検索候補機能
+        let searchTimeout;
+        function initializeSearchSuggestions() {
+            const searchInput = document.querySelector('.search-input');
+            if (!searchInput) return;
+            
+            // 検索候補ドロップダウンを作成
+            const suggestionsContainer = document.createElement('div');
+            suggestionsContainer.className = 'search-suggestions';
+            suggestionsContainer.style.cssText = `
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 64px;
+                background: white;
+                border: 1px solid #ccc;
+                border-top: none;
+                border-radius: 0 0 8px 8px;
+                max-height: 300px;
+                overflow-y: auto;
+                z-index: 1000;
+                display: none;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            `;
+            
+            const searchContainer = searchInput.closest('.search-container');
+            searchContainer.style.position = 'relative';
+            searchContainer.appendChild(suggestionsContainer);
+            
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                clearTimeout(searchTimeout);
+                
+                if (query.length < 2) {
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    fetchSearchSuggestions(query, suggestionsContainer);
+                }, 300);
+            });
+            
+            // 候補以外をクリックしたら候補を隠す
+            document.addEventListener('click', function(e) {
+                if (!searchContainer.contains(e.target)) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+        }
+
+        async function fetchSearchSuggestions(query, container) {
+            try {
+                // Google/YouTube検索予測変換APIを使用
+                const response = await fetch(`/suggest?q=${encodeURIComponent(query)}`);
+                if (response.ok) {
+                    const suggestions = await response.json();
+                    displaySearchSuggestions(suggestions, container, query);
+                } else {
+                    console.error('検索候補取得失敗:', response.status);
+                    // フォールバック: 簡単な候補を表示
+                    const fallbackSuggestions = [
+                        `${query} 最新`,
+                        `${query} 人気`,
+                        `${query} ランキング`,
+                        `${query} まとめ`
+                    ];
+                    displaySearchSuggestions(fallbackSuggestions, container, query);
+                }
+            } catch (error) {
+                console.error('検索候補取得エラー:', error);
+                // エラー時はフォールバック候補を表示
+                const fallbackSuggestions = [
+                    `${query} 最新`,
+                    `${query} 人気`,
+                    `${query} ランキング`
+                ];
+                displaySearchSuggestions(fallbackSuggestions, container, query);
+            }
+        }
+
+        function displaySearchSuggestions(suggestions, container, originalQuery) {
+            container.innerHTML = '';
+            
+            if (suggestions.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.style.cssText = `
+                    padding: 8px 16px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #f0f0f0;
+                    display: flex;
+                    align-items: center;
+                `;
+                
+                item.innerHTML = `
+                    <i class="fas fa-search text-muted me-3"></i>
+                    <span>${suggestion}</span>
+                `;
+                
+                item.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#f8f9fa';
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = 'transparent';
+                });
+                
+                item.addEventListener('click', function() {
+                    document.querySelector('.search-input').value = suggestion;
+                    container.style.display = 'none';
+                    // 検索を実行
+                    document.querySelector('.youtube-search').submit();
+                });
+                
+                container.appendChild(item);
+            });
+            
+            container.style.display = 'block';
+        }
+
+        // 設定管理
+        let viewMode = localStorage.getItem('viewMode') || 'normal'; // デフォルトは通常モード
+        let loopMode = localStorage.getItem('loopMode') === 'true'; // ループモード
+
+        // 設定モーダルを開く
+        function openSettingsModal() {
+            updateModeButtons();
+            updateLoopToggle();
+            const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+            modal.show();
+        }
+
+        // 視聴モードを設定
+        function setViewMode(mode) {
+            viewMode = mode;
+            localStorage.setItem('viewMode', mode);
+            updateModeButtons();
+            
+            // モーダルを閉じる
+            const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // 設定保存メッセージ
+            showToast(mode === 'fast' ? '最速モードに設定しました' : '通常モードに設定しました', 'success');
+        }
+
+        // モードボタンの状態を更新
+        function updateModeButtons() {
+            const fastBtn = document.getElementById('fastModeBtn');
+            const normalBtn = document.getElementById('normalModeBtn');
+            
+            if (viewMode === 'fast') {
+                fastBtn.classList.add('active');
+                fastBtn.classList.remove('btn-outline-primary');
+                fastBtn.classList.add('btn-primary');
+                normalBtn.classList.remove('active', 'btn-secondary');
+                normalBtn.classList.add('btn-outline-secondary');
+            } else {
+                normalBtn.classList.add('active');
+                normalBtn.classList.remove('btn-outline-secondary');
+                normalBtn.classList.add('btn-secondary');
+                fastBtn.classList.remove('active', 'btn-primary');
+                fastBtn.classList.add('btn-outline-primary');
+            }
+        }
+
+        // 動画視聴（モードに応じて処理）
+        function watchVideo(videoId) {
+            if (viewMode === 'fast') {
+                openFastView(videoId);
+            } else {
+                // 通常モード：/watchページへ移動
+                window.location.href = `/watch?v=${videoId}`;
+            }
+        }
+
+        // 最速視聴モードでオーバーレイを開く
+        async function openFastView(videoId) {
+            try {
+                // YouTube Education URLを取得
+                const response = await fetch(`/api/${videoId}`);
+                const data = await response.json();
+                
+                if (data.success && data.youtube_education_url) {
+                    const overlay = document.getElementById('fastViewOverlay');
+                    const iframe = document.getElementById('fastViewFrame');
+                    
+                    // ループ機能を適用
+                    let embedUrl = data.youtube_education_url;
+                    if (loopMode) {
+                        embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'loop=1&playlist=' + videoId;
+                    }
+                    
+                    iframe.src = embedUrl;
+                    overlay.style.display = 'flex';
+                    
+                    // ESCキーで閉じる
+                    document.addEventListener('keydown', handleEscKey);
+                } else {
+                    showToast('動画の読み込みに失敗しました', 'error');
+                }
+            } catch (error) {
+                console.error('最速視聴エラー:', error);
+                showToast('動画の読み込み中にエラーが発生しました', 'error');
+            }
+        }
+
+        // 最速視聴モードを閉じる
+        function closeFastView() {
+            const overlay = document.getElementById('fastViewOverlay');
+            const iframe = document.getElementById('fastViewFrame');
+            
+            overlay.style.display = 'none';
+            iframe.src = '';
+            
+            // イベントリスナーを削除
+            document.removeEventListener('keydown', handleEscKey);
+        }
+
+        // ESCキーハンドリング
+        function handleEscKey(event) {
+            if (event.key === 'Escape') {
+                closeFastView();
+            }
+        }
+
+        // トースト表示
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white border-0`;
+            
+            let bgClass = 'bg-primary';
+            let icon = 'fas fa-info-circle';
+            
+            if (type === 'success') {
+                bgClass = 'bg-success';
+                icon = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                bgClass = 'bg-danger';
+                icon = 'fas fa-exclamation-triangle';
+            }
+            
+            toast.classList.add(bgClass);
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="${icon} me-2"></i>${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                container.style.zIndex = '9999';
+                document.body.appendChild(container);
+            }
+            container.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
+
+        // ループモードを設定
+        function setLoopMode(enabled) {
+            console.log('⚙️ ループモード設定変更:', enabled);
+            loopMode = enabled;
+            localStorage.setItem('loopMode', enabled.toString());
+            showToast(enabled ? 'ループモードが有効になりました' : 'ループモードが無効になりました', 'success');
+            
+            // 現在のページが動画ページの場合、ページをリロードして設定を反映
+            if (window.location.pathname.includes('/watch')) {
+                console.log('🔄 動画ページでループ設定変更 - ページをリロードします');
+                setTimeout(function() {
+                    location.reload();
+                }, 500); // トースト表示を確認してからリロード
+            }
+        }
+
+        // ループトグルの状態を更新
+        function updateLoopToggle() {
+            const loopToggle = document.getElementById('loopToggle');
+            if (loopToggle) {
+                loopToggle.checked = loopMode;
+            }
+        }
+
+        // グローバル関数をwindowオブジェクトに登録（すべてのページから確実にアクセス可能に）
+        window.openFastView = openFastView;
+        window.closeFastView = closeFastView;
+        window.setViewMode = setViewMode;
+        window.setLoopMode = setLoopMode;
+        window.showToast = showToast;
+        window.watchVideo = watchVideo;
+
+        // ページロード時に初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            handleServerError();
+            initializeSearchSuggestions();
+            updateModeButtons();
+            updateLoopToggle();
+            
+            console.log('🎬 グローバル設定初期化完了 - viewMode:', viewMode, 'loopMode:', loopMode);
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

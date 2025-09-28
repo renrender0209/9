@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}評価した動画 - YouTube{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-thumbs-up text-primary"></i> 評価した動画
+            </h2>
+            
+            {% if error %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> {{ error }}
+            </div>
+            {% elif liked_ratings and liked_ratings.items %}
+            
+            <div class="video-grid">
+                {% for rating in liked_ratings.items %}
+                <div class="video-card" onclick="location.href='{{ url_for('watch', v=rating.video_id) }}'">
+                    <div style="position: relative;">
+                        <img src="https://img.youtube.com/vi/{{ rating.video_id }}/hqdefault.jpg" 
+                             class="video-thumbnail" alt="{{ rating.video_id }}" 
+                             onerror="this.src='https://img.youtube.com/vi/{{ rating.video_id }}/mqdefault.jpg'; this.onerror=function(){this.src='https://via.placeholder.com/320x180/f0f0f0/666?text=No+Image';}">
+                        
+                        <span class="like-badge">
+                            <i class="fas fa-thumbs-up"></i>
+                        </span>
+                    </div>
+                    
+                    <div class="video-info">
+                        <div class="video-title">
+                            <a href="{{ url_for('watch', v=rating.video_id) }}">{{ rating.video_id }}</a>
+                        </div>
+                        
+                        <div class="video-meta">
+                            <span class="text-muted">評価日: {{ rating.created_at.strftime('%Y年%m月%d日') }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- ページネーション -->
+            {% if liked_ratings.pages > 1 %}
+            <nav aria-label="ページナビゲーション" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if liked_ratings.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('backend.liked_videos', page=liked_ratings.prev_num) }}">前へ</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in liked_ratings.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != liked_ratings.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('backend.liked_videos', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if liked_ratings.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('backend.liked_videos', page=liked_ratings.next_num) }}">次へ</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-thumbs-up fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">まだ評価した動画がありません</h4>
+                <p class="text-muted">動画を視聴していいねボタンを押してみましょう！</p>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> ホームに戻る
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.like-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.like-badge i {
+    color: #ff6b6b;
+}
+</style>
+{% endblock %}

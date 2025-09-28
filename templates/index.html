@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}ホーム - れんれんtube{% endblock %}
+
+{% block og_title %}れんれんtube{% endblock %}
+
+{% block og_description %}最新の人気動画をチェック！れんれんtubeで高画質動画を無料視聴。siawaseok APIによる安定したストリーミング配信。{% endblock %}
+
+{% block content %}
+
+<!-- トレンド動画 -->
+{% if trending_videos %}
+<div class="trending-header" style="padding: 24px 16px 16px;">
+    <h1 class="trending-title">急上昇</h1>
+</div>
+
+<div class="video-grid">
+    {% for video in trending_videos %}
+    <div class="video-card" onclick="watchVideo('{{ video.videoId }}')"  style="cursor: pointer;">
+        <div style="position: relative;">
+            <img src="{{ video.videoThumbnails[-1].url if video.videoThumbnails and video.videoThumbnails|length > 0 else 'https://img.youtube.com/vi/' + video.videoId + '/maxresdefault.jpg' }}" 
+                 class="video-thumbnail" alt="{{ video.title }}" 
+                 onerror="handleThumbnailError(this, '{{ video.videoId }}')"
+                 loading="lazy">
+            
+            {% if video.lengthSeconds %}
+                {% if video.lengthSeconds == 0 %}
+                <span class="video-duration" style="background: #ff0000; color: white;">
+                    ライブ
+                </span>
+                {% else %}
+                <span class="video-duration">
+                    {{ video.lengthSeconds|format_duration_japanese }}
+                </span>
+                {% endif %}
+            {% endif %}
+        </div>
+        
+        <div class="video-info">
+            <div class="video-title">
+                <a href="{{ url_for('watch', v=video.videoId) }}">{{ video.title }}</a>
+            </div>
+            
+            <div class="video-meta">
+                <a href="{{ url_for('channel', channel_id=video.authorId) }}" 
+                   class="channel-link">{{ video.author }}</a>
+                <br>
+                {% if video.viewCount and video.viewCount > 0 %}
+                {{ '{:,}'.format(video.viewCount) }} 回視聴
+                {% else %}
+                視聴回数不明
+                {% endif %}
+                {% if video.publishedText %} • {{ video.publishedText|format_published_japanese }}{% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align: center; padding: 100px 20px;">
+    <h2 style="color: var(--yt-spec-text-secondary);">トレンド動画を読み込み中...</h2>
+</div>
+{% endif %}
+{% endblock %}
