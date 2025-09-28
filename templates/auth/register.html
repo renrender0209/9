@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新規登録 - Video Stream</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0;
+        }
+        .auth-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .auth-header h1 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .auth-header p {
+            color: #666;
+            margin: 0;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            padding: 12px;
+            font-weight: 500;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #5a67d8, #6b46c1);
+            transform: translateY(-1px);
+        }
+        .auth-links {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .auth-links a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+        .password-strength {
+            margin-top: 0.5rem;
+        }
+        .strength-meter {
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .strength-fill {
+            height: 100%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+        .strength-weak { background: #dc3545; width: 25%; }
+        .strength-fair { background: #fd7e14; width: 50%; }
+        .strength-good { background: #198754; width: 75%; }
+        .strength-strong { background: #28a745; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1><i class="fas fa-play-circle"></i>Youtube</h1>
+                <p>新しいアカウントを作成</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" id="registerForm">
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user"></i> ユーザー名
+                    </label>
+                    <input type="text" class="form-control" id="username" name="username" required 
+                           minlength="3" maxlength="64" pattern="[a-zA-Z0-9_]+">
+                    <div class="form-text">3文字以上、英数字とアンダースコアのみ</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">
+                        <i class="fas fa-envelope"></i> メールアドレス(適当でいいです)
+                    </label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock"></i> パスワード
+                    </label>
+                    <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                    <div class="password-strength">
+                        <div class="strength-meter">
+                            <div class="strength-fill" id="strengthFill"></div>
+                        </div>
+                        <div class="form-text" id="strengthText">8文字以上のパスワードを入力してください</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="confirm_password" class="form-label">
+                        <i class="fas fa-lock"></i> パスワード確認
+                    </label>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    <div class="form-text" id="confirmText"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" id="submitBtn" disabled>
+                    <i class="fas fa-user-plus"></i> アカウントを作成
+                </button>
+            </form>
+
+            <div class="auth-links">
+                <p>既にアカウントをお持ちの方は <a href="{{ url_for('auth.login') }}">ログイン</a></p>
+                <p><a href="{{ url_for('index') }}">ホームに戻る</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        const strengthFill = document.getElementById('strengthFill');
+        const strengthText = document.getElementById('strengthText');
+        const confirmText = document.getElementById('confirmText');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function checkPasswordStrength(pwd) {
+            let strength = 0;
+            if (pwd.length >= 8) strength++;
+            if (/[a-z]/.test(pwd)) strength++;
+            if (/[A-Z]/.test(pwd)) strength++;
+            if (/[0-9]/.test(pwd)) strength++;
+            if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+            return strength;
+        }
+
+        function updatePasswordStrength() {
+            const pwd = password.value;
+            const strength = checkPasswordStrength(pwd);
+            
+            strengthFill.className = 'strength-fill';
+            
+            if (pwd.length === 0) {
+                strengthText.textContent = '8文字以上のパスワードを入力してください';
+                strengthFill.style.width = '0%';
+            } else if (strength <= 2) {
+                strengthFill.classList.add('strength-weak');
+                strengthText.textContent = 'パスワードが弱いです';
+            } else if (strength === 3) {
+                strengthFill.classList.add('strength-fair');
+                strengthText.textContent = 'パスワードの強度は普通です';
+            } else if (strength === 4) {
+                strengthFill.classList.add('strength-good');
+                strengthText.textContent = 'パスワードは良好です';
+            } else {
+                strengthFill.classList.add('strength-strong');
+                strengthText.textContent = 'パスワードは強力です';
+            }
+        }
+
+        function validateForm() {
+            const pwd = password.value;
+            const confirmPwd = confirmPassword.value;
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+
+            let isValid = true;
+
+            // パスワード確認
+            if (pwd && confirmPwd) {
+                if (pwd === confirmPwd) {
+                    confirmText.textContent = 'パスワードが一致しています';
+                    confirmText.className = 'form-text text-success';
+                } else {
+                    confirmText.textContent = 'パスワードが一致しません';
+                    confirmText.className = 'form-text text-danger';
+                    isValid = false;
+                }
+            } else {
+                confirmText.textContent = '';
+            }
+
+            // 全体の検証
+            if (username.length >= 3 && email && pwd.length >= 8 && pwd === confirmPwd) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        password.addEventListener('input', () => {
+            updatePasswordStrength();
+            validateForm();
+        });
+
+        confirmPassword.addEventListener('input', validateForm);
+        document.getElementById('username').addEventListener('input', validateForm);
+        document.getElementById('email').addEventListener('input', validateForm);
+    </script>
+</body>
+</html>

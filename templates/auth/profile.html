@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロフィール - Video Stream</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 0;
+        }
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #667eea;
+            margin: 0 auto 1rem;
+        }
+        .stats-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .stats-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .tab-content {
+            padding: 2rem 0;
+        }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-play-circle"></i> Video Stream
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('index') }}">ホーム</a>
+                <a class="nav-link" href="{{ url_for('auth.logout') }}">ログアウト</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="profile-header">
+        <div class="container text-center">
+            <div class="profile-avatar">
+                {% if user.avatar_url %}
+                    <img src="{{ user.avatar_url }}" alt="プロフィール画像" class="w-100 h-100 rounded-circle">
+                {% else %}
+                    <i class="fas fa-user"></i>
+                {% endif %}
+            </div>
+            <h1>{{ user.username }}</h1>
+            <p class="mb-0">{{ user.email }}</p>
+            <small>登録日: {{ user.created_at.strftime('%Y年%m月%d日') }}</small>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <!-- 統計カード -->
+        <div class="row mb-5">
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card text-center p-3">
+                    <div class="stats-icon text-primary">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h4 id="watchCount">-</h4>
+                    <p class="text-muted mb-0">視聴動画数</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card text-center p-3">
+                    <div class="stats-icon text-success">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h4 id="favoriteCount">-</h4>
+                    <p class="text-muted mb-0">お気に入り</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card text-center p-3">
+                    <div class="stats-icon text-info">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <h4 id="playlistCount">-</h4>
+                    <p class="text-muted mb-0">プレイリスト</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card text-center p-3">
+                    <div class="stats-icon text-warning">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h4 id="watchTime">-</h4>
+                    <p class="text-muted mb-0">総視聴時間</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- タブメニュー -->
+        <ul class="nav nav-pills justify-content-center mb-4" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="history-tab" data-bs-toggle="pill" data-bs-target="#history" type="button" role="tab">
+                    <i class="fas fa-history"></i> 視聴履歴
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="favorites-tab" data-bs-toggle="pill" data-bs-target="#favorites" type="button" role="tab">
+                    <i class="fas fa-heart"></i> お気に入り
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="playlists-tab" data-bs-toggle="pill" data-bs-target="#playlists" type="button" role="tab">
+                    <i class="fas fa-list"></i> プレイリスト
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="downloads-tab" data-bs-toggle="pill" data-bs-target="#downloads" type="button" role="tab">
+                    <i class="fas fa-download"></i> ダウンロード
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="settings-tab" data-bs-toggle="pill" data-bs-target="#settings" type="button" role="tab">
+                    <i class="fas fa-cog"></i> 設定
+                </button>
+            </li>
+        </ul>
+
+        <!-- タブコンテンツ -->
+        <div class="tab-content" id="profileTabContent">
+            <!-- 視聴履歴 -->
+            <div class="tab-pane fade show active" id="history" role="tabpanel">
+                <div class="row" id="historyContent">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">読み込み中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- お気に入り -->
+            <div class="tab-pane fade" id="favorites" role="tabpanel">
+                <div class="row" id="favoritesContent">
+                    <div class="col-12 text-center">
+                        <p class="text-muted">お気に入りを読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プレイリスト -->
+            <div class="tab-pane fade" id="playlists" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3>プレイリスト</h3>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPlaylistModal">
+                        <i class="fas fa-plus"></i> 新規作成
+                    </button>
+                </div>
+                <div class="row" id="playlistsContent">
+                    <div class="col-12 text-center">
+                        <p class="text-muted">プレイリストを読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ダウンロード -->
+            <div class="tab-pane fade" id="downloads" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3>ダウンロード履歴</h3>
+                    <button class="btn btn-outline-secondary" onclick="clearDownloads()">
+                        <i class="fas fa-trash"></i> 履歴をクリア
+                    </button>
+                </div>
+                <div class="row" id="downloadsContent">
+                    <div class="col-12 text-center">
+                        <p class="text-muted">ダウンロード履歴を読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 設定 -->
+            <div class="tab-pane fade" id="settings" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-user"></i> プロフィール設定</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="profileForm">
+                                    <div class="mb-3">
+                                        <label for="username" class="form-label">ユーザー名</label>
+                                        <input type="text" class="form-control" id="username" value="{{ user.username }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">メールアドレス</label>
+                                        <input type="email" class="form-control" id="email" value="{{ user.email }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> 保存
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-lock"></i> パスワード変更</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="passwordForm">
+                                    <div class="mb-3">
+                                        <label for="currentPassword" class="form-label">現在のパスワード</label>
+                                        <input type="password" class="form-control" id="currentPassword" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="newPassword" class="form-label">新しいパスワード</label>
+                                        <input type="password" class="form-control" id="newPassword" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="confirmNewPassword" class="form-label">新しいパスワード（確認）</label>
+                                        <input type="password" class="form-control" id="confirmNewPassword" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-key"></i> パスワード変更
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- プレイリスト作成モーダル -->
+    <div class="modal fade" id="createPlaylistModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">新しいプレイリスト</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createPlaylistForm">
+                        <div class="mb-3">
+                            <label for="playlistName" class="form-label">プレイリスト名</label>
+                            <input type="text" class="form-control" id="playlistName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="playlistDescription" class="form-label">説明</label>
+                            <textarea class="form-control" id="playlistDescription" rows="3"></textarea>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="playlistPublic">
+                            <label class="form-check-label" for="playlistPublic">
+                                公開プレイリストにする
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="createPlaylist()">作成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 統計データを読み込み
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('watchCount').textContent = data.stats.videos_watched;
+                    document.getElementById('favoriteCount').textContent = data.stats.favorites_count;
+                    document.getElementById('playlistCount').textContent = data.stats.playlists_count;
+                    
+                    // 視聴時間を時間:分形式で表示
+                    const totalSeconds = data.stats.total_watch_time;
+                    const hours = Math.floor(totalSeconds / 3600);
+                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                    document.getElementById('watchTime').textContent = `${hours}:${minutes.toString().padStart(2, '0')}`;
+                }
+            } catch (error) {
+                console.error('統計データの読み込みエラー:', error);
+            }
+        }
+
+        // 視聴履歴を読み込み
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/watch-history');
+                const data = await response.json();
+                
+                const content = document.getElementById('historyContent');
+                if (data.success && data.history.length > 0) {
+                    content.innerHTML = data.history.map(item => `
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <img src="${item.thumbnail_url}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h6 class="card-title">${item.title}</h6>
+                                    <p class="card-text text-muted">${item.uploader}</p>
+                                    <small class="text-muted">視聴: ${new Date(item.watched_at).toLocaleDateString()}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    content.innerHTML = '<div class="col-12 text-center"><p class="text-muted">視聴履歴がありません</p></div>';
+                }
+            } catch (error) {
+                console.error('視聴履歴の読み込みエラー:', error);
+            }
+        }
+
+        // プロフィール更新
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            
+            try {
+                const response = await fetch('/api/user/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, email})
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('プロフィールを更新しました');
+                } else {
+                    alert('エラー: ' + data.error);
+                }
+            } catch (error) {
+                alert('更新に失敗しました');
+            }
+        });
+
+        // パスワード変更
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmNewPassword').value;
+            
+            if (newPassword !== confirmPassword) {
+                alert('新しいパスワードが一致しません');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user/change-password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword,
+                        confirm_password: confirmPassword
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('パスワードを変更しました');
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    alert('エラー: ' + data.error);
+                }
+            } catch (error) {
+                alert('パスワード変更に失敗しました');
+            }
+        });
+
+        // プレイリスト作成
+        async function createPlaylist() {
+            const name = document.getElementById('playlistName').value;
+            const description = document.getElementById('playlistDescription').value;
+            const isPublic = document.getElementById('playlistPublic').checked;
+            
+            try {
+                const response = await fetch('/api/playlists', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: name,
+                        description: description,
+                        is_public: isPublic
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('プレイリストを作成しました');
+                    bootstrap.Modal.getInstance(document.getElementById('createPlaylistModal')).hide();
+                    document.getElementById('createPlaylistForm').reset();
+                } else {
+                    alert('エラー: ' + data.error);
+                }
+            } catch (error) {
+                alert('プレイリスト作成に失敗しました');
+            }
+        }
+
+        // お気に入りを読み込み
+        async function loadFavorites() {
+            try {
+                const response = await fetch('/api/favorites');
+                const data = await response.json();
+                
+                const content = document.getElementById('favoritesContent');
+                if (data.success && data.favorites.length > 0) {
+                    content.innerHTML = data.favorites.map(item => `
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <img src="${item.thumbnail_url}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h6 class="card-title">${item.title}</h6>
+                                    <p class="card-text text-muted">${item.uploader}</p>
+                                    <small class="text-muted">追加: ${new Date(item.added_at).toLocaleDateString()}</small>
+                                    <div class="mt-2">
+                                        <a href="/watch?v=${item.video_id}" class="btn btn-sm btn-primary">視聴</a>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="removeFavorite('${item.video_id}')">削除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    content.innerHTML = '<div class="col-12 text-center"><p class="text-muted">お気に入りがありません</p></div>';
+                }
+            } catch (error) {
+                console.error('お気に入りの読み込みエラー:', error);
+                document.getElementById('favoritesContent').innerHTML = '<div class="col-12 text-center"><p class="text-danger">読み込みに失敗しました</p></div>';
+            }
+        }
+
+        // プレイリストを読み込み
+        async function loadPlaylists() {
+            try {
+                const response = await fetch('/api/playlists');
+                const data = await response.json();
+                
+                const content = document.getElementById('playlistsContent');
+                if (data.success && data.playlists.length > 0) {
+                    content.innerHTML = data.playlists.map(item => `
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">${item.name}</h6>
+                                    <p class="card-text text-muted">${item.description || '説明なし'}</p>
+                                    <p class="text-muted small">動画数: ${item.video_count}本</p>
+                                    <small class="text-muted">作成: ${new Date(item.created_at).toLocaleDateString()}</small>
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-primary" onclick="viewPlaylist(${item.id})">表示</button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deletePlaylist(${item.id})">削除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    content.innerHTML = '<div class="col-12 text-center"><p class="text-muted">プレイリストがありません</p></div>';
+                }
+            } catch (error) {
+                console.error('プレイリストの読み込みエラー:', error);
+                document.getElementById('playlistsContent').innerHTML = '<div class="col-12 text-center"><p class="text-danger">読み込みに失敗しました</p></div>';
+            }
+        }
+
+        // お気に入りから削除
+        async function removeFavorite(videoId) {
+            if (!confirm('お気に入りから削除しますか？')) return;
+            
+            try {
+                const response = await fetch(`/api/favorites/${videoId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadFavorites();
+                    loadStats();
+                } else {
+                    alert('削除に失敗しました: ' + data.error);
+                }
+            } catch (error) {
+                alert('削除に失敗しました');
+            }
+        }
+
+        // プレイリスト削除
+        async function deletePlaylist(playlistId) {
+            if (!confirm('プレイリストを削除しますか？')) return;
+            
+            try {
+                const response = await fetch(`/api/playlists/${playlistId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadPlaylists();
+                    loadStats();
+                } else {
+                    alert('削除に失敗しました: ' + data.error);
+                }
+            } catch (error) {
+                alert('削除に失敗しました');
+            }
+        }
+
+        // ダウンロード履歴を読み込み
+        async function loadDownloads() {
+            try {
+                const response = await fetch('/api/downloads');
+                const data = await response.json();
+                
+                const content = document.getElementById('downloadsContent');
+                if (data.success && data.downloads.length > 0) {
+                    content.innerHTML = data.downloads.map(item => `
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">${item.title}</h6>
+                                    <p class="text-muted">${item.quality} - ${item.format.toUpperCase()}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge ${item.status === 'completed' ? 'bg-success' : item.status === 'failed' ? 'bg-danger' : 'bg-warning'}">${getStatusText(item.status)}</span>
+                                        <small class="text-muted">${new Date(item.created_at).toLocaleDateString()}</small>
+                                    </div>
+                                    ${item.status === 'completed' && item.download_url ? `
+                                        <div class="mt-2">
+                                            <a href="${item.download_url}" class="btn btn-sm btn-success" download>
+                                                <i class="fas fa-download"></i> ダウンロード
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteDownload(${item.id})">削除</button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    content.innerHTML = '<div class="col-12 text-center"><p class="text-muted">ダウンロード履歴がありません</p></div>';
+                }
+            } catch (error) {
+                console.error('ダウンロード履歴の読み込みエラー:', error);
+                document.getElementById('downloadsContent').innerHTML = '<div class="col-12 text-center"><p class="text-danger">読み込みに失敗しました</p></div>';
+            }
+        }
+
+        // ダウンロード状態のテキスト変換
+        function getStatusText(status) {
+            switch(status) {
+                case 'pending': return '待機中';
+                case 'processing': return '処理中';
+                case 'completed': return '完了';
+                case 'failed': return '失敗';
+                default: return status;
+            }
+        }
+
+        // ダウンロードを削除
+        async function deleteDownload(downloadId) {
+            if (!confirm('ダウンロード履歴を削除しますか？')) return;
+            
+            try {
+                const response = await fetch(`/api/downloads/${downloadId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadDownloads();
+                } else {
+                    alert('削除に失敗しました: ' + data.error);
+                }
+            } catch (error) {
+                alert('削除に失敗しました');
+            }
+        }
+
+        // ダウンロード履歴をクリア
+        async function clearDownloads() {
+            if (!confirm('全てのダウンロード履歴を削除しますか？')) return;
+            
+            try {
+                const response = await fetch('/api/downloads/clear', {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadDownloads();
+                } else {
+                    alert('削除に失敗しました: ' + data.error);
+                }
+            } catch (error) {
+                alert('削除に失敗しました');
+            }
+        }
+
+        // タブ切り替え時のデータ読み込み
+        document.addEventListener('shown.bs.tab', function (event) {
+            const targetId = event.target.getAttribute('data-bs-target');
+            if (targetId === '#favorites') {
+                loadFavorites();
+            } else if (targetId === '#playlists') {
+                loadPlaylists();
+            } else if (targetId === '#downloads') {
+                loadDownloads();
+            }
+        });
+
+        // 初期読み込み
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadHistory();
+        });
+    </script>
+</body>
+</html>
