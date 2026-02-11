@@ -1,413 +1,262 @@
 {% extends "base.html" %}
 
-{% block title %}{{ video_info.title }} - れんれんtube{% endblock %}
+{% block title %}
+{% if video_info %}{{ video_info.title }} - れんれんtube{% else %}動画を視聴 - れんれんtube{% endif %}
+{% endblock %}
 
-{% block extra_css %}
-<style>
-    /* 動画プレイヤーエリア */
-    .video-container {
-        position: relative;
-        width: 100%;
-        background: #000;
-        border-radius: 8px;
-        overflow: hidden;
-    }
+{% block og_title %}
+{% if video_info %}{{ video_info.title }} - れんれんtube{% else %}動画を視聴 - れんれんtube{% endif %}
+{% endblock %}
 
-    .video-player {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-    }
+{% block og_description %}
+{% if video_info and video_info.description %}{{ (video_info.description[:150] + "...") }}{% else %}れんれんtubeで動画視聴{% endif %}
+{% endblock %}
 
-    iframe.video-player {
-        border: none;
-    }
+{% block og_type %}video{% endblock %}
 
-    /* 動画情報エリア */
-    .video-info {
-        padding: 20px 0;
-    }
+{% block og_image %}
+{% if video_info and video_info.videoId %}https://img.youtube.com/vi/{{ video_info.videoId }}/maxresdefault.jpg{% else %}{{ request.url_root.replace('http://', 'https://').replace(':5000', '.replit.app') }}static/og-image.jpg{% endif %}
+{% endblock %}
 
-    .video-title {
-        font-size: 20px;
-        font-weight: 600;
-        margin-bottom: 12px;
-        line-height: 1.4;
-    }
-
-    .video-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-
-    .video-stats {
-        color: #606060;
-        font-size: 14px;
-    }
-
-    .video-actions {
-        display: flex;
-        gap: 12px;
-    }
-
-    .action-btn {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 16px;
-        border: 1px solid #ddd;
-        border-radius: 20px;
-        background: white;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 14px;
-    }
-
-    .action-btn:hover {
-        background: #f8f8f8;
-        border-color: #ccc;
-    }
-
-    .action-btn i {
-        font-size: 16px;
-    }
-
-    /* チャンネル情報 */
-    .channel-info {
-        display: flex;
-        align-items: center;
-        padding: 16px 0;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .channel-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        margin-right: 12px;
-        background: #e0e0e0;
-    }
-
-    .channel-details {
-        flex: 1;
-    }
-
-    .channel-name {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 2px;
-    }
-
-    .channel-name a {
-        color: #0f0f0f;
-        text-decoration: none;
-    }
-
-    .channel-name a:hover {
-        color: #065fd4;
-    }
-
-    /* 説明文 */
-    .video-description {
-        padding: 16px 0;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .description-text {
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        font-size: 14px;
-        line-height: 1.6;
-        max-height: 80px;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .description-text.expanded {
-        max-height: none;
-    }
-
-    .description-toggle {
-        margin-top: 8px;
-        background: none;
-        border: none;
-        color: #065fd4;
-        font-weight: 500;
-        cursor: pointer;
-        padding: 0;
-        font-size: 14px;
-    }
-
-    .description-toggle:hover {
-        text-decoration: underline;
-    }
-
-    /* コメントセクション */
-    .comments-section {
-        padding: 24px 0;
-    }
-
-    .comments-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 24px;
-        font-size: 16px;
-        font-weight: 600;
-    }
-
-    .comment-item {
-        display: flex;
-        margin-bottom: 20px;
-    }
-
-    .comment-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin-right: 12px;
-        background: #e0e0e0;
-    }
-
-    .comment-content {
-        flex: 1;
-    }
-
-    .comment-author {
-        font-weight: 600;
-        font-size: 13px;
-        margin-bottom: 4px;
-    }
-
-    .comment-text {
-        font-size: 14px;
-        line-height: 1.5;
-        margin-bottom: 8px;
-    }
-
-    .comment-meta {
-        display: flex;
-        gap: 16px;
-        font-size: 12px;
-        color: #606060;
-    }
-
-    /* 関連動画 */
-    .related-videos-section {
-        position: sticky;
-        top: 80px;
-    }
-
-    .related-header {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .reload-btn {
-        padding: 6px 12px;
-        font-size: 13px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        background: white;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .reload-btn:hover {
-        background: #f8f8f8;
-    }
-
-    .related-video-item {
-        display: flex;
-        margin-bottom: 12px;
-        cursor: pointer;
-        border-radius: 8px;
-        overflow: hidden;
-        transition: background 0.2s;
-    }
-
-    .related-video-item:hover {
-        background: #f8f8f8;
-    }
-
-    .related-thumbnail-container {
-        position: relative;
-        width: 168px;
-        flex-shrink: 0;
-    }
-
-    .related-thumbnail {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        object-fit: cover;
-        border-radius: 8px;
-    }
-
-    .duration-badge {
-        position: absolute;
-        bottom: 4px;
-        right: 4px;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 2px 4px;
-        border-radius: 2px;
-        font-size: 12px;
-        font-weight: 500;
-    }
-
-    .live-badge {
-        background: #cc0000;
-    }
-
-    .related-info {
-        flex: 1;
-        padding: 0 12px;
-        min-width: 0;
-    }
-
-    .related-title {
-        font-size: 14px;
-        font-weight: 500;
-        line-height: 1.4;
-        margin-bottom: 4px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-    }
-
-    .related-channel {
-        font-size: 12px;
-        color: #606060;
-        margin-bottom: 2px;
-    }
-
-    .related-meta {
-        font-size: 12px;
-        color: #606060;
-    }
-
-    /* ローディング */
-    .spinner-border-sm {
-        width: 1rem;
-        height: 1rem;
-        border-width: 0.15em;
-    }
-
-    /* レスポンシブ */
-    @media (max-width: 768px) {
-        .video-title {
-            font-size: 18px;
-        }
-
-        .related-videos-section {
-            position: static;
-            margin-top: 24px;
-        }
-
-        .related-thumbnail-container {
-            width: 120px;
-        }
-    }
-</style>
+{% block og_image_alt %}
+{% if video_info %}{{ video_info.title }}のサムネイル{% else %}れんれんtube{% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid" style="max-width: 1800px; padding: 24px;">
+{% if video_info and stream_data %}
+<div class="watch-page-container" style="max-width: 1280px; margin: 0 auto; padding: 20px;">
     <div class="row">
-        <!-- 動画プレイヤーとメイン情報 -->
+        <!-- メインコンテンツエリア -->
         <div class="col-lg-8 col-md-7">
-            <!-- 動画プレイヤー -->
-            <div class="video-container">
-                {% if stream_data %}
-                    <video class="video-player" controls autoplay>
-                        {% if stream_data.get('720p') %}
-                            <source src="{{ stream_data['720p'] }}" type="video/mp4">
-                        {% elif stream_data.get('480p') %}
-                            <source src="{{ stream_data['480p'] }}" type="video/mp4">
-                        {% elif stream_data.get('360p') %}
-                            <source src="{{ stream_data['360p'] }}" type="video/mp4">
-                        {% endif %}
-                        お使いのブラウザは動画再生に対応していません。
-                    </video>
-                {% else %}
-                    <iframe 
-                        class="video-player"
-                        src="https://www.youtube-nocookie.com/embed/{{ video_info.videoId }}?autoplay=1&rel=0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen>
-                    </iframe>
-                {% endif %}
-            </div>
-
-            <!-- 動画情報 -->
-            <div class="video-info">
-                <h1 class="video-title">{{ video_info.title }}</h1>
-                
-                <div class="video-meta">
-                    <div class="video-stats">
-                        {% if video_info.viewCount %}
-                            <span>{{ video_info.viewCount|format_view_count_with_suffix }}</span>
-                        {% endif %}
-                        {% if video_info.publishedText %}
-                            <span> • {{ video_info.publishedText|format_published_japanese }}</span>
+            <!-- 動画プレーヤーエリア -->
+            <div class="video-player-section mb-3">
+                <!-- YouTube Education 埋め込みプレーヤー (デフォルト表示) -->
+                <div id="youtubeEduPlayer">
+                    <div class="embed-container" style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; background: #000; border-radius: 8px; overflow: hidden;">
+                        {% if stream_data.youtube_education_url %}
+                        <iframe id="youtubeEduFrame" 
+                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+                                src="{{ stream_data.youtube_education_url }}"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                        </iframe>
+                        {% else %}
+                        <div class="d-flex align-items-center justify-content-center h-100 text-white">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            埋め込み動画が利用できません
+                        </div>
                         {% endif %}
                     </div>
-                    <div class="video-actions">
-                        <button class="action-btn" onclick="shareVideo()">
-                            <i class="fas fa-share"></i>
-                            <span>共有</span>
+                    <div class="player-mode-info mt-2 p-2 bg-success bg-opacity-10 rounded">
+                        <small class="text-success">
+                            <i class="fas fa-graduation-cap me-1"></i>
+                            YouTube Educationで再生中
+                        </small>
+                        <button class="btn btn-outline-primary btn-sm me-2 float-end" onclick="toggleToStreamPlayer()">
+                            <i class="fas fa-play"></i> ストリーム再生に切り替え
                         </button>
                     </div>
                 </div>
 
-                <!-- チャンネル情報 -->
-                <div class="channel-info">
-                    <img src="https://yt3.ggpht.com/ytc/default_144.jpg" 
-                         alt="{{ video_info.author }}" 
-                         class="channel-avatar"
-                         onerror="this.src='https://via.placeholder.com/48'">
-                    <div class="channel-details">
-                        <div class="channel-name">
-                            {% if video_info.authorId %}
-                                <a href="/channel/{{ video_info.authorId }}">{{ video_info.author }}</a>
-                            {% else %}
-                                {{ video_info.author }}
+                <!-- ストリームプレーヤー (非表示) -->
+                <div id="streamPlayer" style="display: none;">
+                    {% if stream_data.best_url or (stream_data.formats and stream_data.formats|length > 0) %}
+                    <div class="custom-video-player">
+                        <video id="videoPlayer" class="w-100" preload="metadata" 
+                               playsinline webkit-playsinline
+                               style="width: 100%; height: auto; aspect-ratio: 16/9; background: #000; border-radius: 8px;"
+                               {% if not (stream_data.formats and stream_data.formats[0].has_audio) %}muted{% endif %}>
+                            {% if stream_data.best_url %}
+                            <source src="{{ stream_data.best_url }}" 
+                                    type="{% if stream_data.formats and stream_data.formats[0].container == 'webm' %}video/webm{% else %}video/mp4{% endif %}">
                             {% endif %}
+                            <p>このビデオを再生するには、HTML5対応ブラウザが必要です。</p>
+                        </video>
+                        
+                        <!-- YouTube風カスタムコントロール -->
+                        <div class="custom-controls" id="customControls">
+                            <div class="progress-container">
+                                <div class="progress-bar" id="progressBar">
+                                    <div class="progress-filled" id="progressFilled"></div>
+                                    <div class="progress-handle" id="progressHandle"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="controls-bottom">
+                                <div class="controls-left">
+                                    <button class="control-btn" id="playPauseBtn">
+                                        <i class="fas fa-play" id="playPauseIcon"></i>
+                                    </button>
+                                    <button class="control-btn" id="muteBtn">
+                                        <i class="fas fa-volume-up" id="muteIcon"></i>
+                                    </button>
+                                    <div class="volume-container">
+                                        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="70">
+                                    </div>
+                                    <span class="time-display">
+                                        <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
+                                    </span>
+                                </div>
+                                
+                                <div class="controls-right">
+                                    <!-- 画質選択（多品質・音声分離対応） -->
+                                    {% if stream_data %}
+                                    <select class="form-select form-select-sm me-2" id="qualitySelect" style="width: auto; display: inline-block;">
+                                        {% if stream_data.best_url %}
+                                        <option value="{{ stream_data.best_url }}" 
+                                                data-quality="auto"
+                                                data-audio-url=""
+                                                data-has-audio="{% if stream_data.has_audio %}true{% else %}false{% endif %}">
+                                            自動
+                                        </option>
+                                        {% endif %}
+                                        
+                                        {% if stream_data.multi_quality and stream_data.quality_streams %}
+                                        <!-- 新しい多品質形式 -->
+                                        {% for quality, streams in stream_data.quality_streams.items() %}
+                                        {% if streams.video_url or streams.combined_url %}
+                                        <option value="{{ streams.combined_url or streams.video_url }}" 
+                                                data-quality="{{ quality }}"
+                                                data-video-url="{{ streams.video_url or '' }}"
+                                                data-audio-url="{{ streams.audio_url or '' }}"
+                                                data-combined-url="{{ streams.combined_url or '' }}"
+                                                data-has-audio="{{ streams.has_audio|lower }}"
+                                                data-multi-quality="true">
+                                            {{ quality }}{% if not streams.has_audio %} (映像のみ){% endif %}
+                                        </option>
+                                        {% endif %}
+                                        {% endfor %}
+                                        {% elif stream_data.formats %}
+                                        <!-- 従来の形式（後方互換性） -->
+                                        {% for format in stream_data.formats %}
+                                        <option value="{{ format.url }}" 
+                                                data-quality="{{ format.quality }}"
+                                                data-audio-url="{{ format.audio_url or '' }}"
+                                                data-has-audio="{{ format.has_audio|lower }}">
+                                            {{ format.quality }}
+                                        </option>
+                                        {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                    {% endif %}
+                                    <button class="control-btn" id="fullscreenBtn">
+                                        <i class="fas fa-expand"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <h5>動画ストリームが見つかりません</h5>
+                        <p>動画のストリームURLを取得できませんでした。YouTube Educationで再生してください。</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="player-mode-info mt-2 p-2 bg-info bg-opacity-10 rounded">
+                        <small class="text-primary">
+                            <i class="fas fa-play me-1"></i>
+                            ストリーム再生中
+                        </small>
+                        <button class="btn btn-outline-success btn-sm me-2 float-end" onclick="toggleToEduPlayer()">
+                            <i class="fas fa-graduation-cap"></i> YouTube Educationに切り替え
+                        </button>
                     </div>
                 </div>
 
-                <!-- 説明文 -->
-                {% if video_info.description %}
-                <div class="video-description">
-                    <div class="description-text" id="descriptionText">{{ video_info.description }}</div>
-                    <button class="description-toggle" id="descriptionToggle" onclick="toggleDescription()">
-                        もっと見る
+                <!-- 音声専用プレーヤー（非表示） -->
+                <audio id="audioPlayer" style="display: none;" preload="metadata"></audio>
+            </div>
+
+            <!-- 動画タイトル -->
+            <h1 class="video-title mb-2" style="font-size: 1.5rem; font-weight: 600; line-height: 1.4; color: #0f0f0f;">
+                {{ video_info.title }}
+            </h1>
+
+            <!-- 動画投稿者情報（アイコン付き） -->
+            <div class="author-info d-flex align-items-center mb-3 p-2 rounded" style="background-color: #f8f9fa;">
+                <div class="author-avatar me-3" style="cursor: pointer;" onclick="goToChannel()">
+                    <img id="authorAvatar" src="https://via.placeholder.com/48x48/cccccc/ffffff?text=📺" 
+                         alt="投稿者アイコン" class="rounded-circle" width="48" height="48"
+                         style="border: 2px solid #e5e5e5;">
+                </div>
+                <div class="author-details flex-grow-1" style="cursor: pointer;" onclick="goToChannel()">
+                    <div class="author-name fw-semibold mb-1" id="authorName">
+                        {{ video_info.author or '投稿者情報を読み込み中...' }}
+                    </div>
+                    <div class="author-stats text-muted small" id="authorStats">
+                        <!-- チャンネル情報表示は削除済み -->
+                    </div>
+                </div>
+                <div class="author-actions">
+                    <button class="btn btn-outline-primary btn-sm" id="subscribeBtn" style="display: none;">
+                        <i class="fas fa-bell me-1"></i> 登録
                     </button>
                 </div>
-                {% endif %}
+            </div>
 
-                <!-- コメントセクション -->
-                <div class="comments-section">
-                    <div class="comments-header">
-                        <i class="fas fa-comment me-2"></i>
-                        <span>コメント</span>
-                    </div>
-                    <div id="commentsContainer">
-                        <div class="text-center py-3">
-                            <div class="spinner-border spinner-border-sm me-2"></div>
-                            <span>コメントを読み込み中...</span>
+            <!-- 動画統計情報 -->
+            <div class="video-stats mb-3 d-flex flex-wrap align-items-center" style="color: #606060; font-size: 14px;">
+                <span class="me-3">
+                    <i class="fas fa-eye me-1"></i>
+                    {{ video_info.viewCount|format_view_count_with_suffix }}
+                </span>
+                {% if video_info.publishedText %}
+                <span class="me-3">
+                    <i class="fas fa-calendar me-1"></i>
+                    {{ video_info.publishedText|format_published_japanese }}
+                </span>
+                {% endif %}
+                <div class="ms-auto">
+                    <button class="btn btn-outline-secondary btn-sm me-2" onclick="shareVideo()">
+                        <i class="fas fa-share me-1"></i> 共有
+                    </button>
+                </div>
+            </div>
+
+
+            <!-- 動画説明欄 -->
+            {% if video_info.description %}
+            <div class="video-description mb-4">
+                <div class="description-container p-3" style="background: #f9f9f9; border-radius: 8px; border: 1px solid #e5e5e5;">
+                    <div class="description-content" id="descriptionContent">
+                        <div class="description-preview">
+                            {{ (video_info.description[:300])|replace('\n', '<br>')|safe }}
+                            {% if video_info.description|length > 300 %}...{% endif %}
                         </div>
+                        {% if video_info.description|length > 300 %}
+                        <div class="description-full" style="display: none;">
+                            {{ video_info.description|replace('\n', '<br>')|safe }}
+                        </div>
+                        <button class="btn btn-link btn-sm p-0 mt-2" id="toggleDescription">
+                            もっと見る
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- コメントセクション -->
+            <div class="comments-section">
+                <div class="comments-header mb-3">
+                    <h6 style="font-weight: 600;">
+                        <i class="fas fa-comments me-2"></i>
+                        コメント
+                        <span id="commentCount" class="text-muted" style="font-weight: normal;"></span>
+                    </h6>
+                    <button id="loadCommentsBtn" class="btn btn-outline-primary btn-sm" onclick="loadComments()" style="display: none;">
+                        <i class="fas fa-sync me-1"></i> 再読み込み
+                    </button>
+                </div>
+                
+                
+                <div id="commentsContainer">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">コメントを読み込み中...</span>
+                        </div>
+                        <p class="mt-2">コメントを読み込み中...</p>
                     </div>
                 </div>
             </div>
@@ -416,18 +265,17 @@
         <!-- 関連動画サイドバー -->
         <div class="col-lg-4 col-md-5">
             <div class="related-videos-section">
-                <div class="related-header">
-                    <span>関連動画</span>
-                    <button class="reload-btn" onclick="loadRelatedVideos()">
-                        <i class="fas fa-sync"></i>
-                        <span>更新</span>
+                <div class="related-header mb-3 d-flex justify-content-between align-items-center">
+                    <h6 style="font-weight: 600; margin: 0;">関連動画</h6>
+                    <button class="btn btn-outline-primary btn-sm" onclick="loadRelatedVideos()">
+                        <i class="fas fa-sync me-1"></i> 読み込み
                     </button>
                 </div>
                 
                 <div id="relatedVideosContainer">
-                    <div class="text-center py-4">
-                        <div class="spinner-border spinner-border-sm mb-2"></div>
-                        <p style="font-size: 14px; color: #606060;">関連動画を読み込み中...</p>
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-video fa-2x mb-2"></i>
+                        <p>関連動画を読み込んでいます...</p>
                     </div>
                 </div>
             </div>
@@ -435,216 +283,1613 @@
     </div>
 </div>
 
+{% else %}
+<div class="text-center py-5">
+    <div class="error-state">
+        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+        <h4>動画を読み込めません</h4>
+        <p class="text-muted mb-4">
+            {% if error %}
+            {{ error }}
+            {% else %}
+            この動画は現在利用できません。
+            {% endif %}
+        </p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">
+            <i class="fas fa-home me-2"></i>ホームに戻る
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 start-0 p-3" style="z-index: 9999;">
+    <div id="likeToast" class="toast bg-success text-white" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-body d-flex align-items-center">
+            <i class="fas fa-thumbs-up me-2"></i>
+            <span id="toastMessage">操作が完了しました！</span>
+        </div>
+    </div>
+</div>
+
+<style>
+/* YouTube風カスタムビデオプレーヤーのスタイル */
+.custom-video-player {
+    position: relative;
+    width: 100%;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.custom-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    padding: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.custom-video-player:hover .custom-controls {
+    opacity: 1;
+}
+
+.progress-container {
+    margin-bottom: 8px;
+    height: 4px;
+    cursor: pointer;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+    position: relative;
+}
+
+.progress-filled {
+    height: 100%;
+    background: #ff0000;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s ease;
+}
+
+.progress-handle {
+    position: absolute;
+    top: -4px;
+    width: 12px;
+    height: 12px;
+    background: #ff0000;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    display: none;
+}
+
+.progress-container:hover .progress-handle {
+    display: block;
+}
+
+.controls-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.controls-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.controls-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s ease;
+}
+
+.control-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.volume-container {
+    display: flex;
+    align-items: center;
+    width: 60px;
+}
+
+.volume-slider {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.3);
+    outline: none;
+    border-radius: 3px;
+}
+
+.time-display {
+    color: white;
+    font-size: 12px;
+    white-space: nowrap;
+    margin-left: 8px;
+}
+
+/* コメントセクションのスタイル */
+.comment-item {
+    padding: 16px 0;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.comment-item:last-child {
+    border-bottom: none;
+}
+
+.comment-avatar {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+}
+
+.comment-author {
+    font-weight: 600;
+    color: #0f0f0f;
+    font-size: 13px;
+}
+
+.comment-content {
+    margin: 4px 0 8px 0;
+    line-height: 1.4;
+    color: #0f0f0f;
+    font-size: 14px;
+}
+
+.comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.comment-actions .btn {
+    color: #606060;
+    font-size: 12px;
+    padding: 4px 0;
+}
+
+.comment-actions .btn:hover {
+    color: #0f0f0f;
+}
+
+.comment-form .card {
+    border: 1px solid #e5e5e5;
+    box-shadow: none;
+}
+
+.comment-form .card-body {
+    padding: 16px;
+}
+
+.comment-form textarea {
+    border: 1px solid #ccc;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.comment-form textarea:focus {
+    border-color: #065fd4;
+    box-shadow: 0 0 0 0.2rem rgba(6, 95, 212, 0.25);
+}
+
+.comments-list {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.comments-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.comments-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.comments-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 関連動画のスタイル */
+.related-video-item {
+    display: flex;
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.related-video-item:hover {
+    background-color: #f8f9fa;
+}
+
+.related-thumbnail-container {
+    position: relative;
+    width: 168px;
+    height: 94px;
+    flex-shrink: 0;
+}
+
+.related-thumbnail {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.duration-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.live-badge {
+    background: #ff0000 !important;
+    color: white;
+    font-weight: 600;
+}
+
+.related-info {
+    flex: 1;
+    padding-left: 12px;
+}
+
+.related-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    color: #0f0f0f;
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.related-channel {
+    font-size: 12px;
+    color: #606060;
+    margin-bottom: 2px;
+}
+
+.related-meta {
+    font-size: 12px;
+    color: #606060;
+}
+
+/* コメントのスタイル */
+.comment-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.comment-item:last-child {
+    border-bottom: none;
+}
+
+.comment-avatar {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+}
+
+.comment-header {
+    display: flex;
+    align-items-center;
+    margin-bottom: 4px;
+}
+
+.comment-author {
+    font-weight: 600;
+    font-size: 13px;
+    color: #0f0f0f;
+    margin-right: 8px;
+}
+
+.comment-time {
+    font-size: 12px;
+    color: #606060;
+}
+
+.comment-content {
+    font-size: 14px;
+    line-height: 1.4;
+    color: #0f0f0f;
+    margin-bottom: 8px;
+}
+
+.comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.comment-action {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #606060;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .watch-page-container {
+        padding: 10px;
+    }
+    
+    .related-videos-section {
+        margin-top: 20px;
+    }
+    
+    .related-video-item {
+        flex-direction: column;
+    }
+    
+    .related-thumbnail {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16/9;
+    }
+    
+    .related-info {
+        padding-left: 0;
+        padding-top: 8px;
+    }
+}
+</style>
+
 <script>
-// グローバル変数
-const videoId = '{{ video_info.videoId }}';
-const videoTitle = '{{ video_info.title[:30] }}';
+// 現在の再生モード
+let currentPlayerMode = 'education'; // 'education' または 'stream'
 
-// ページ読み込み時の初期化
-document.addEventListener('DOMContentLoaded', function() {
-    // 関連動画を読み込み（100ms後）
-    setTimeout(() => {
-        loadRelatedVideos();
-    }, 100);
+// プレーヤー切り替え機能
+function toggleToStreamPlayer() {
+    document.getElementById('youtubeEduPlayer').style.display = 'none';
+    document.getElementById('streamPlayer').style.display = 'block';
+    currentPlayerMode = 'stream';
     
-    // コメントを読み込み（500ms後）
-    setTimeout(() => {
-        loadComments();
-    }, 500);
-});
+    // ビデオプレーヤーを初期化
+    initializeVideoPlayer();
+    
+    // VKRDownloader APIのデータも統合
+    enhanceStreamPlayerWithVKR();
+}
 
-// 関連動画読み込み
-function loadRelatedVideos() {
-    const container = document.getElementById('relatedVideosContainer');
-    container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></div>';
+function toggleToEduPlayer() {
+    document.getElementById('streamPlayer').style.display = 'none';
+    document.getElementById('youtubeEduPlayer').style.display = 'block';
+    currentPlayerMode = 'education';
+}
+
+// 既存のストリーム機能を拡張してVKRDownloader APIのデータも使用
+function enhanceStreamPlayerWithVKR() {
+    const videoId = '{{ video_info.videoId }}';
+    const audioPlayer = document.getElementById('audioPlayer');
     
-    const query = encodeURIComponent(videoTitle);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    console.log('🚀 VKRDownloader APIからデータを取得開始:', videoId);
     
-    fetch(`/api/related-videos/${videoId}?q=${query}`, {
-        signal: controller.signal
-    })
-        .then(response => response.json())
+    // VKR APIからデータを取得し、既存のストリーム機能に追加
+    fetch(`/api/vkr-stream/${videoId}`)
+        .then(response => {
+            console.log('📡 VKR API レスポンス受信:', response.status);
+            return response.json();
+        })
         .then(data => {
-            clearTimeout(timeoutId);
-            if (data.success && data.videos && data.videos.length > 0) {
-                displayRelatedVideos(data.videos);
+            console.log('🚀 VKRDownloader API データ:', data);
+            
+            if (data.success) {
+                console.log('✅ VKR API成功 - データ統合開始');
+                console.log('Video stream:', data.video_stream);
+                console.log('Audio stream:', data.audio_stream);
+                console.log('Combined stream:', data.combined_stream);
+                
+                // VKRのストリームデータを既存の画質選択に最優先で追加
+                addVKRStreamsToQualitySelect(data);
+                
+                // 動画・音声同期機能を追加
+                setupAudioSync(data);
+                
+                // 音声を強制的に有効化
+                ensureAudioEnabled();
             } else {
-                container.innerHTML = '<div class="text-muted text-center py-3"><small>関連動画が見つかりません</small></div>';
+                console.warn('❌ VKR API失敗:', data.error);
+                console.log('既存のストリームのみを使用します');
             }
         })
         .catch(error => {
-            clearTimeout(timeoutId);
-            console.error('関連動画エラー:', error);
-            container.innerHTML = '<div class="text-muted text-center py-3"><small>読み込みに失敗しました</small></div>';
+            console.error('❌ VKRDownloader API エラー（フォールバック使用）:', error);
+            console.log('🔄 既存のストリーム機能を最高品質に最適化します');
+            optimizeExistingStreams();
         });
 }
 
-// 関連動画表示
-function displayRelatedVideos(videos) {
-    const container = document.getElementById('relatedVideosContainer');
-    const fragment = document.createDocumentFragment();
-    
-    videos.slice(0, 20).forEach(video => {
-        const div = document.createElement('div');
-        div.className = 'related-video-item';
-        div.onclick = () => watchVideo(video.videoId);
+// 音声を強制的に有効化する関数
+function ensureAudioEnabled() {
+    const videoPlayer = document.getElementById('videoPlayer');
+    if (videoPlayer) {
+        // ミュート解除
+        videoPlayer.muted = false;
+        // 音量設定
+        videoPlayer.volume = 0.7;
         
-        const duration = video.lengthSeconds ? formatDurationJapanese(video.lengthSeconds) : '';
-        const isLive = video.lengthSeconds === 0 || video.liveNow;
+        console.log('🔊 プレーヤー音声強制有効化 - ミュート:', videoPlayer.muted, 'ボリューム:', videoPlayer.volume);
         
-        div.innerHTML = `
-            <div class="related-thumbnail-container">
-                <img src="https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg" 
-                     class="related-thumbnail"
-                     alt="${escapeHtml(video.title)}"
-                     loading="lazy"
-                     onerror="this.src='https://img.youtube.com/vi/${video.videoId}/default.jpg'">
-                ${isLive ? '<div class="duration-badge live-badge">ライブ</div>' : 
-                  (duration ? `<div class="duration-badge">${duration}</div>` : '')}
-            </div>
-            <div class="related-info">
-                <div class="related-title">${escapeHtml(video.title)}</div>
-                <div class="related-channel">${escapeHtml(video.author || '不明')}</div>
-                <div class="related-meta">
-                    ${video.viewCount ? formatViewCount(video.viewCount) + '回視聴' : ''}
-                    ${video.publishedText ? ' • ' + escapeHtml(video.publishedText) : ''}
-                </div>
-            </div>
-        `;
+        // 音量スライダーも同期
+        const volumeSlider = document.getElementById('volumeSlider');
+        if (volumeSlider) {
+            volumeSlider.value = 70;
+        }
         
-        fragment.appendChild(div);
-    });
-    
-    container.innerHTML = '';
-    container.appendChild(fragment);
-}
-
-// コメント読み込み
-function loadComments() {
-    const container = document.getElementById('commentsContainer');
-    
-    fetch(`/api/comments/${videoId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.comments && data.comments.length > 0) {
-                displayComments(data.comments);
-            } else {
-                container.innerHTML = '<div class="text-muted text-center py-3"><small>コメントがありません</small></div>';
-            }
-        })
-        .catch(error => {
-            console.error('コメントエラー:', error);
-            container.innerHTML = '<div class="text-muted text-center py-3"><small>コメントの読み込みに失敗しました</small></div>';
-        });
-}
-
-// コメント表示
-function displayComments(comments) {
-    const container = document.getElementById('commentsContainer');
-    const fragment = document.createDocumentFragment();
-    
-    comments.slice(0, 20).forEach(comment => {
-        const div = document.createElement('div');
-        div.className = 'comment-item';
-        
-        const avatarUrl = comment.authorThumbnail || 'https://yt3.ggpht.com/ytc/default_48.jpg';
-        
-        div.innerHTML = `
-            <img src="${avatarUrl}" 
-                 class="comment-avatar" 
-                 alt="${escapeHtml(comment.author || '匿名')}"
-                 onerror="this.src='https://via.placeholder.com/40'">
-            <div class="comment-content">
-                <div class="comment-author">${escapeHtml(comment.author || '匿名')}</div>
-                <div class="comment-text">${escapeHtml(comment.content || '')}</div>
-                <div class="comment-meta">
-                    ${comment.likeCount ? `<span>${comment.likeCount} いいね</span>` : ''}
-                    ${comment.publishedText ? `<span>${escapeHtml(comment.publishedText)}</span>` : ''}
-                </div>
-            </div>
-        `;
-        
-        fragment.appendChild(div);
-    });
-    
-    container.innerHTML = '';
-    container.appendChild(fragment);
-}
-
-// 説明文の展開/折りたたみ
-function toggleDescription() {
-    const text = document.getElementById('descriptionText');
-    const btn = document.getElementById('descriptionToggle');
-    
-    if (text.classList.contains('expanded')) {
-        text.classList.remove('expanded');
-        btn.textContent = 'もっと見る';
-    } else {
-        text.classList.add('expanded');
-        btn.textContent = '折りたたむ';
+        // ミュートボタンアイコンを更新
+        const muteIcon = document.getElementById('muteIcon');
+        if (muteIcon) {
+            muteIcon.className = 'fas fa-volume-up';
+        }
     }
 }
 
-// 動画遷移
-function watchVideo(newVideoId) {
-    window.location.href = `/watch?v=${newVideoId}`;
+function addVKRStreamsToQualitySelect(vkrData) {
+    const qualitySelect = document.getElementById('qualitySelect');
+    if (!qualitySelect || !vkrData) return;
+    
+    let vkrOptionsAdded = false;
+    let firstOption = null;
+    
+    // VKRの分離ストリーム（動画+音声）を最優先で最初に挿入
+    if (vkrData.video_stream && vkrData.audio_stream && vkrData.video_stream.url && vkrData.audio_stream.url) {
+        const option = document.createElement('option');
+        option.value = vkrData.video_stream.url;
+        option.setAttribute('data-audio-url', vkrData.audio_stream.url);
+        option.setAttribute('data-quality', vkrData.video_stream.quality || 'VKR高画質');
+        option.setAttribute('data-has-audio', 'separate');
+        option.textContent = `🚀 VKR高画質 (${vkrData.video_stream.quality || 'HD'}p + Audio)`;
+        firstOption = option;
+        qualitySelect.insertBefore(option, qualitySelect.firstChild);
+        vkrOptionsAdded = true;
+        console.log('✨ VKR分離ストリームを最優先で追加:', vkrData.video_stream.quality || 'HD');
+    }
+    
+    // 🎯 VKRの全ての組み合わせストリームを追加
+    if (vkrData.all_streams && vkrData.all_streams.combined_streams) {
+        const combinedStreams = vkrData.all_streams.combined_streams;
+        console.log(`🎯 VKR全画質追加開始: ${combinedStreams.length}個のストリーム`);
+        
+        // 画質順でソート（高画質順）
+        const sortedStreams = combinedStreams.sort((a, b) => (b.quality || 0) - (a.quality || 0));
+        
+        // 各画質をオプションに追加
+        sortedStreams.forEach((stream, index) => {
+            if (stream.url && stream.quality > 0) {
+                const option = document.createElement('option');
+                option.value = stream.url;
+                option.setAttribute('data-quality', stream.quality.toString());
+                option.setAttribute('data-has-audio', 'true');
+                option.textContent = `🚀 VKR${stream.quality}p (${stream.format || 'mp4'})`;
+                
+                // 最初のストリームをデフォルト選択として設定
+                if (!firstOption && index === 0) {
+                    firstOption = option;
+                }
+                
+                qualitySelect.insertBefore(option, qualitySelect.firstChild);
+                console.log(`✨ VKR画質追加: ${stream.quality}p (${stream.format})`);
+            }
+        });
+        
+        vkrOptionsAdded = true;
+    }
+    
+    // フォールバック：単一の組み合わせストリーム
+    else if (vkrData.combined_stream && vkrData.combined_stream.url) {
+        const option = document.createElement('option');
+        option.value = vkrData.combined_stream.url;
+        option.setAttribute('data-quality', vkrData.combined_stream.quality || 'VKR');
+        option.setAttribute('data-has-audio', 'true');
+        option.textContent = `🚀 VKR組み合わせ (${vkrData.combined_stream.quality || 'auto'}p)`;
+        
+        if (!firstOption) {
+            firstOption = option;
+        }
+        qualitySelect.insertBefore(option, qualitySelect.firstChild);
+        vkrOptionsAdded = true;
+        console.log('✨ VKR組み合わせストリームを追加:', vkrData.combined_stream.quality || 'auto');
+    }
+    
+    if (vkrOptionsAdded) {
+        // 最高画質をデフォルト選択
+        if (firstOption) {
+            firstOption.selected = true;
+        }
+        
+        console.log('🎯 VKRストリームが最優先で設定されました');
+        
+        // VKRストリームが選択された状態で画質変更イベントを発火
+        const event = new Event('change');
+        qualitySelect.dispatchEvent(event);
+    }
 }
 
-// 共有機能
+function setupAudioSync(vkrData) {
+    const videoPlayer = document.getElementById('videoPlayer');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const qualitySelect = document.getElementById('qualitySelect');
+    
+    if (!videoPlayer || !audioPlayer || !qualitySelect) return;
+    
+    // 画質変更時の処理を拡張
+    qualitySelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const audioUrl = selectedOption.getAttribute('data-audio-url');
+        const hasAudio = selectedOption.getAttribute('data-has-audio');
+        
+        if (hasAudio === 'separate' && audioUrl) {
+            // 分離ストリームの場合
+            audioPlayer.src = audioUrl;
+            videoPlayer.muted = true; // 動画の音声をミュート
+            
+            // 同期再生設定
+            setupVideoAudioSync(videoPlayer, audioPlayer);
+            
+            console.log('🎵 VKR分離ストリーム再生設定完了');
+        } else if (hasAudio === 'false' || !hasAudio || audioUrl === '') {
+            // 映像のみの場合 - omada APIから音声を自動取得
+            console.log('🎵 映像のみストリーム検出 - omada APIから音声取得を開始');
+            fetchAudioFromOmadaAPI();
+        } else {
+            // 通常ストリームの場合
+            audioPlayer.src = '';
+            videoPlayer.muted = false;
+        }
+    });
+}
+
+function setupVideoAudioSync(videoPlayer, audioPlayer) {
+    // 同期制御
+    function syncAudio() {
+        if (audioPlayer.src) {
+            const timeDiff = Math.abs(videoPlayer.currentTime - audioPlayer.currentTime);
+            if (timeDiff > 0.2) { // 0.2秒以上のズレで同期
+                audioPlayer.currentTime = videoPlayer.currentTime;
+            }
+        }
+    }
+    
+    // 動画の再生/一時停止に音声を同期
+    videoPlayer.addEventListener('play', () => {
+        if (audioPlayer.src) {
+            audioPlayer.currentTime = videoPlayer.currentTime;
+            audioPlayer.play().catch(e => console.warn('音声再生エラー:', e));
+        }
+    });
+    
+    videoPlayer.addEventListener('pause', () => {
+        if (audioPlayer.src) {
+            audioPlayer.pause();
+        }
+    });
+    
+    videoPlayer.addEventListener('seeked', () => {
+        if (audioPlayer.src) {
+            audioPlayer.currentTime = videoPlayer.currentTime;
+            if (!videoPlayer.paused) {
+                audioPlayer.play().catch(e => console.warn('音声再生エラー:', e));
+            }
+        }
+    });
+    
+    // 定期的な同期チェック
+    const syncInterval = setInterval(syncAudio, 1000);
+    
+    // クリーンアップ
+    videoPlayer.addEventListener('ended', () => {
+        clearInterval(syncInterval);
+    });
+}
+
+// omada APIから音声のみを取得して同期再生
+async function fetchAudioFromOmadaAPI() {
+    const videoId = '{{ video_info.videoId if video_info else "" }}';
+    if (!videoId) {
+        console.warn('動画IDが見つかりません');
+        return;
+    }
+    
+    const videoPlayer = document.getElementById('videoPlayer');
+    const audioPlayer = document.getElementById('audioPlayer');
+    
+    if (!videoPlayer || !audioPlayer) {
+        console.warn('プレーヤー要素が見つかりません');
+        return;
+    }
+    
+    try {
+        console.log('🎵 omada APIから音声取得開始:', videoId);
+        
+        // omada APIから音声ストリームを取得
+        const response = await fetch(`/api/omada-audio/${videoId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`omada API エラー: ${response.status}`);
+        }
+        
+        const audioData = await response.json();
+        
+        if (audioData.success && audioData.audio_url) {
+            console.log('✅ omada APIから音声URL取得成功:', audioData.audio_url);
+            
+            // 音声プレーヤーにURLを設定
+            audioPlayer.src = audioData.audio_url;
+            
+            // 動画の音声をミュート
+            videoPlayer.muted = true;
+            
+            // 音声の音量を設定
+            audioPlayer.volume = 0.7;
+            
+            // 同期再生設定
+            setupVideoAudioSync(videoPlayer, audioPlayer);
+            
+            // 現在動画が再生中なら音声も開始
+            if (!videoPlayer.paused) {
+                audioPlayer.currentTime = videoPlayer.currentTime;
+                audioPlayer.play().catch(e => console.warn('音声再生エラー:', e));
+            }
+            
+            console.log('🎵 omada音声同期設定完了 - 音量:', audioPlayer.volume);
+            
+            // 成功通知を表示
+            showAudioSyncNotification();
+            
+        } else {
+            console.warn('omada APIから音声URLを取得できませんでした:', audioData);
+        }
+        
+    } catch (error) {
+        console.error('omada API音声取得エラー:', error);
+        // エラーが発生した場合は動画の音声を有効にする
+        videoPlayer.muted = false;
+    }
+}
+
+// 音声同期成功の通知表示
+function showAudioSyncNotification() {
+    // 既存の通知があれば削除
+    const existingNotice = document.getElementById('audio-sync-notice');
+    if (existingNotice) {
+        existingNotice.remove();
+    }
+    
+    // 通知メッセージを作成
+    const notice = document.createElement('div');
+    notice.id = 'audio-sync-notice';
+    notice.className = 'alert alert-success alert-dismissible fade show mt-2';
+    notice.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-volume-up me-2"></i>
+            <div>
+                <strong>音声同期完了</strong><br>
+                映像のみストリームにomada音声を自動追加しました
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // プレーヤーの下に挿入
+    const playerSection = document.querySelector('.video-player-section');
+    if (playerSection) {
+        playerSection.appendChild(notice);
+        
+        // 5秒後に自動で非表示
+        setTimeout(() => {
+            if (notice && notice.parentNode) {
+                notice.classList.remove('show');
+                setTimeout(() => {
+                    if (notice && notice.parentNode) {
+                        notice.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+}
+
+// VKR APIが利用できない場合の既存ストリーム最適化
+function optimizeExistingStreams() {
+    const qualitySelect = document.getElementById('qualitySelect');
+    if (!qualitySelect) return;
+    
+    console.log('🚀 既存ストリーム品質を最適化中...');
+    
+    // 既存のオプションを品質順にソート
+    const options = Array.from(qualitySelect.options);
+    const sortedOptions = options.sort((a, b) => {
+        const aQuality = parseInt(a.getAttribute('data-quality') || '0') || 0;
+        const bQuality = parseInt(b.getAttribute('data-quality') || '0') || 0;
+        return bQuality - aQuality; // 降順（高品質優先）
+    });
+    
+    // セレクトボックスをクリアして再構築
+    qualitySelect.innerHTML = '';
+    
+    // 最高品質から順に追加
+    sortedOptions.forEach((option, index) => {
+        const quality = option.getAttribute('data-quality') || 'unknown';
+        const hasAudio = option.getAttribute('data-has-audio') || 'false';
+        
+        // 最高品質のオプションを優先表示
+        if (index === 0) {
+            option.textContent = `🏆 最高品質 (${quality})`;
+            option.selected = true;
+        } else {
+            option.textContent = `${quality}${hasAudio === 'true' ? ' (音声付き)' : ''}`;
+        }
+        
+        qualitySelect.appendChild(option);
+    });
+    
+    // 最高品質オプションが選択された状態で画質変更イベントを発火
+    if (qualitySelect.options.length > 0) {
+        const event = new Event('change');
+        qualitySelect.dispatchEvent(event);
+        console.log('✅ 既存ストリームが最高品質で最適化されました');
+    }
+    
+    // ユーザーに状況を通知
+    showOptimizationNotice();
+}
+
+// 最適化通知の表示
+function showOptimizationNotice() {
+    // 既存の通知がある場合は削除
+    const existingNotice = document.getElementById('optimization-notice');
+    if (existingNotice) {
+        existingNotice.remove();
+    }
+    
+    // 通知メッセージを作成
+    const notice = document.createElement('div');
+    notice.id = 'optimization-notice';
+    notice.className = 'alert alert-info alert-dismissible fade show mt-2';
+    notice.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-info-circle me-2"></i>
+            <div>
+                <strong>ストリーム最適化完了</strong><br>
+                最高品質のストリームを自動選択しました
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // プレーヤーの下に挿入
+    const playerSection = document.querySelector('.video-player-section');
+    if (playerSection) {
+        playerSection.appendChild(notice);
+        
+        // 5秒後に自動で非表示
+        setTimeout(() => {
+            if (notice && notice.parentNode) {
+                notice.classList.remove('show');
+                setTimeout(() => {
+                    if (notice && notice.parentNode) {
+                        notice.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+}
+
+// 関連動画を読み込み
+function loadRelatedVideos() {
+    const container = document.getElementById('relatedVideosContainer');
+    container.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>関連動画を読み込み中...</div>';
+    
+    const videoId = '{{ video_info.videoId }}';
+    const query = encodeURIComponent('{{ video_info.title[:30] }}');
+    
+    fetch(`/api/related-videos/${videoId}?q=${query}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.videos) {
+                displayRelatedVideos(data.videos);
+            } else {
+                container.innerHTML = '<div class="text-muted text-center py-3"><i class="fas fa-exclamation-circle me-1"></i>関連動画が見つかりません</div>';
+            }
+        })
+        .catch(error => {
+            console.error('関連動画読み込みエラー:', error);
+            container.innerHTML = '<div class="text-danger text-center py-3"><i class="fas fa-exclamation-triangle me-1"></i>読み込みエラーが発生しました</div>';
+        });
+}
+
+function displayRelatedVideos(videos) {
+    const container = document.getElementById('relatedVideosContainer');
+    let html = '';
+    
+    videos.slice(0, 100).forEach(video => {
+        const duration = video.lengthSeconds ? formatDurationJapanese(video.lengthSeconds) : '';
+        
+        // ライブ動画の判定
+        const isLive = video.lengthSeconds === 0 || video.liveNow;
+        
+        html += `
+            <div class="related-video-item" onclick="watchVideo('${video.videoId}')" style="cursor: pointer;">
+                <div class="related-thumbnail-container">
+                    <img src="https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg" 
+                         class="related-thumbnail"
+                         alt="${video.title}"
+                         onerror="handleThumbnailError(this, '${video.videoId}')"
+                         loading="lazy">
+                    ${isLive ? 
+                        '<div class="duration-badge live-badge">ライブ</div>' : 
+                        (duration ? `<div class="duration-badge">${duration}</div>` : '')
+                    }
+                </div>
+                <div class="related-info">
+                    <div class="related-title">${video.title}</div>
+                    <div class="related-channel">${video.author}</div>
+                    <div class="related-meta">
+                        ${video.viewCount ? formatViewCount(video.viewCount) + '回視聴' : ''}
+                        ${video.publishedText ? ' • ' + formatPublishedJapanese(video.publishedText) : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// コメントを読み込み（omada.cafe API最優先、自動表示対応）
+function loadComments() {
+    const container = document.getElementById('commentsContainer');
+    const countSpan = document.getElementById('commentCount');
+    
+    container.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>コメントを読み込み中...</div>';
+    
+    const videoId = '{{ video_info.videoId }}';
+    let allComments = [];
+    let totalCount = 0;
+    
+    // 🎯 omada.cafe API を最優先で直接使用
+    fetch(`https://yt.omada.cafe/api/v1/comments/${videoId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.comments) {
+                const rawComments = data.comments || [];
+                totalCount = data.commentCount || rawComments.length;
+                
+                console.log(`✅ omada.cafe APIからコメント取得成功: ${totalCount} 件`);
+                
+                if (rawComments.length > 0) {
+                    // omada.cafe APIのデータを正規化
+                    allComments = rawComments.map((comment, index) => {
+                        // アバターURLを取得
+                        let avatarUrl = '';
+                        if (comment.authorThumbnails && Array.isArray(comment.authorThumbnails) && comment.authorThumbnails.length > 0) {
+                            avatarUrl = comment.authorThumbnails[0].url;
+                        } else if (comment.authorThumbnail) {
+                            avatarUrl = comment.authorThumbnail;
+                        }
+                        
+                        return {
+                            id: comment.id || `omada_${index}`,
+                            user: {
+                                username: comment.author || 'Unknown User',
+                                avatar_url: avatarUrl
+                            },
+                            content: comment.content || comment.text || '',
+                            created_at: comment.publishedText || comment.published || '',
+                            likes: comment.likeCount || 0,
+                            source: 'omada'
+                        };
+                    });
+                    
+                    // コメントを時間順でソート（新しいものが上）
+                    allComments.sort((a, b) => {
+                        const timeA = a.created_at || '';
+                        const timeB = b.created_at || '';
+                        return timeB.localeCompare(timeA);
+                    });
+                    
+                    displayComments(allComments);
+                    countSpan.textContent = `(${totalCount.toLocaleString()} 件)`;
+                } else {
+                    showNoCommentsMessage();
+                }
+            } else {
+                // フォールバック: 内部APIを使用
+                loadCommentsFromInternalAPI(videoId);
+            }
+        })
+        .catch(error => {
+            console.warn('omada.cafe API エラー、内部APIにフォールバック:', error);
+            // フォールバック: 内部APIを使用
+            loadCommentsFromInternalAPI(videoId);
+        });
+}
+
+// フォールバック用の内部API呼び出し
+function loadCommentsFromInternalAPI(videoId) {
+    const container = document.getElementById('commentsContainer');
+    const countSpan = document.getElementById('commentCount');
+    
+    fetch(`/api/priority-comments/${videoId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success && result.comments) {
+                const allComments = result.comments || [];
+                const totalCount = result.commentCount || allComments.length;
+                
+                console.log(`✅ 内部APIからコメント取得成功: ${totalCount} 件`);
+                
+                if (allComments.length > 0) {
+                    allComments.sort((a, b) => {
+                        const timeA = a.created_at || a.publishedText || '';
+                        const timeB = b.created_at || b.publishedText || '';
+                        return timeB.localeCompare(timeA);
+                    });
+                    
+                    displayComments(allComments);
+                    countSpan.textContent = `(${totalCount.toLocaleString()} 件)`;
+                } else {
+                    showNoCommentsMessage();
+                }
+            } else {
+                showNoCommentsMessage();
+            }
+        })
+        .catch(error => {
+            console.error('コメント読み込みエラー:', error);
+            container.innerHTML = '<div class="text-danger text-center py-3"><i class="fas fa-exclamation-triangle me-1"></i>コメント読み込みエラーが発生しました</div>';
+        });
+}
+
+// コメントなしメッセージの表示
+function showNoCommentsMessage() {
+    const container = document.getElementById('commentsContainer');
+    container.innerHTML = `
+        <div class="text-muted text-center py-4">
+            <i class="fas fa-comments fa-2x mb-2"></i>
+            <p>まだコメントはありません</p>
+            <small>最初にコメントを投稿してみましょう！</small>
+        </div>
+    `;
+}
+
+function displayComments(comments, commentCount) {
+    const container = document.getElementById('commentsContainer');
+    let html = '';
+    
+    comments.forEach((comment, index) => {
+        html += `
+            <div class="comment-item">
+                <div class="d-flex">
+                    <div class="me-3">
+                        ${comment.authorThumbnails && comment.authorThumbnails.length > 0 ? 
+                            `<img src="${comment.authorThumbnails[0].url}" class="comment-avatar rounded-circle" alt="${comment.author}">` :
+                            `<div class="comment-avatar rounded-circle bg-secondary d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user text-white"></i>
+                            </div>`
+                        }
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="comment-header">
+                            <span class="comment-author">${comment.author}</span>
+                            <span class="comment-time">${comment.publishedText || ''}</span>
+                        </div>
+                        <div class="comment-content">
+                            ${comment.content.replace(/\n/g, '<br>')}
+                        </div>
+                        <div class="comment-actions">
+                            ${comment.likeCount > 0 ? 
+                                `<div class="comment-action">
+                                    <i class="fas fa-thumbs-up me-1"></i>${comment.likeCount}
+                                </div>` : ''
+                            }
+                            ${comment.replies > 0 ? 
+                                `<div class="comment-action">
+                                    <i class="fas fa-reply me-1"></i>${comment.replies} 件の返信
+                                </div>` : ''
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// 動画共有機能
 function shareVideo() {
     const url = window.location.href;
-    
     if (navigator.share) {
         navigator.share({
             title: '{{ video_info.title }}',
+            text: '{{ video_info.author }}の動画をチェック！',
             url: url
-        }).catch(err => console.log('共有エラー:', err));
+        });
     } else {
-        // フォールバック: URLをコピー
         navigator.clipboard.writeText(url).then(() => {
-            alert('URLをコピーしました');
-        }).catch(err => {
-            console.error('コピーエラー:', err);
-            prompt('URLをコピーしてください:', url);
+            showToast('URLをコピーしました！');
         });
     }
 }
 
-// ヘルパー関数
+// 再生回数フォーマット関数
 function formatViewCount(count) {
     if (!count) return '';
-    count = parseInt(count);
+    
     if (count >= 100000000) {
-        return Math.floor(count / 100000000) + '億';
+        const billions = Math.floor(count / 100000000);
+        const millions = Math.floor((count % 100000000) / 10000);
+        return millions > 0 ? `${billions}億${millions}万` : `${billions}億`;
     } else if (count >= 10000) {
-        return Math.floor(count / 10000) + '万';
+        const millions = Math.floor(count / 10000);
+        const thousands = count % 10000;
+        return thousands > 0 ? `${millions}万${thousands.toLocaleString()}` : `${millions}万`;
     } else {
         return count.toLocaleString();
     }
 }
 
-function formatDurationJapanese(seconds) {
-    if (!seconds) return '';
-    seconds = parseInt(seconds);
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
+// Toast表示
+function showToast(message) {
+    const toast = document.getElementById('likeToast');
+    const messageSpan = document.getElementById('toastMessage');
+    messageSpan.textContent = message;
     
-    if (h > 0) {
-        return m > 0 ? `${h}時間${m}分` : `${h}時間`;
-    } else if (m > 0) {
-        return s > 0 ? `${m}分${s}秒` : `${m}分`;
-    } else {
-        return `${s}秒`;
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+
+
+// Toast表示機能の改善
+function showToast(message, type = 'info') {
+    // 既存のtoastがあれば削除
+    const existingToast = document.getElementById('customToast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    const toastColors = {
+        success: 'bg-success',
+        error: 'bg-danger',
+        warning: 'bg-warning',
+        info: 'bg-info'
+    };
+    
+    const toastIcons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
+    const toastContainer = document.querySelector('.toast-container') || document.body;
+    const toast = document.createElement('div');
+    toast.id = 'customToast';
+    toast.className = `toast ${toastColors[type]} text-white`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="toast-body d-flex align-items-center">
+            <i class="fas ${toastIcons[type]} me-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+    bsToast.show();
+    
+    // トースト削除
+    toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+    });
+}
+
+// 説明欄の展開/折りたたみ
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButton = document.getElementById('toggleDescription');
+    if (toggleButton) {
+        toggleButton.addEventListener('click', function() {
+            const preview = document.querySelector('.description-preview');
+            const full = document.querySelector('.description-full');
+            
+            if (full.style.display === 'none') {
+                preview.style.display = 'none';
+                full.style.display = 'block';
+                this.textContent = '閉じる';
+            } else {
+                preview.style.display = 'block';
+                full.style.display = 'none';
+                this.textContent = 'もっと見る';
+            }
+        });
+    }
+    
+    
+    // ループ機能を適用
+    applyLoopMode();
+    
+    // コメントを即座に自動読み込み
+    loadComments();
+    
+    // 動画投稿者アイコンを自動読み込み
+    setTimeout(() => {
+        loadAuthorInfo();
+    }, 50); // 0.05秒後に読み込み開始
+    
+    // 関連動画を高速読み込み
+    setTimeout(() => {
+        loadRelatedVideos();
+    }, 100); // 0.1秒後に読み込み開始（高速化）
+});
+
+// ループ機能を適用
+function applyLoopMode() {
+    const loopMode = localStorage.getItem('loopMode') === 'true';
+    console.log('🔄 ループモード適用開始:', loopMode);
+    
+    // YouTube Education iframeにループパラメータを適用/削除
+    const eduFrame = document.getElementById('youtubeEduFrame');
+    if (eduFrame) {
+        const currentSrc = eduFrame.src;
+        const videoId = '{{ video_info.videoId }}';
+        console.log('📺 現在のiframe URL:', currentSrc);
+        
+        if (loopMode) {
+            // ループオン：ループパラメータを追加
+            if (currentSrc && !currentSrc.includes('loop=1')) {
+                const separator = currentSrc.includes('?') ? '&' : '?';
+                const newSrc = currentSrc + separator + 'loop=1&playlist=' + videoId;
+                console.log('✅ ループオン - 新しいURL:', newSrc);
+                eduFrame.src = newSrc;
+            } else {
+                console.log('ℹ️ ループは既に有効です');
+            }
+        } else {
+            // ループオフ：ループパラメータを削除
+            if (currentSrc && currentSrc.includes('loop=1')) {
+                let newSrc = currentSrc
+                    .replace(/[?&]loop=1/g, '')
+                    .replace(/[?&]playlist=[^&]*/g, '');
+                // ?が消えてしまった場合の修正
+                newSrc = newSrc.replace(/&/, '?');
+                console.log('❌ ループオフ - 新しいURL:', newSrc);
+                eduFrame.src = newSrc;
+            } else {
+                console.log('ℹ️ ループは既に無効です');
+            }
+        }
+    }
+    
+    // HTML5 ビデオプレーヤーにループ属性を適用/削除
+    const videoPlayer = document.getElementById('videoPlayer');
+    if (videoPlayer) {
+        videoPlayer.loop = loopMode;
+        console.log('🎥 HTML5プレーヤーのloop属性:', videoPlayer.loop);
     }
 }
 
+// 時間フォーマット関数（YouTube風の短縮形式）
+function formatDurationJapanese(seconds) {
+    if (!seconds || seconds === 0) return '';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    }
+}
+
+// 日付フォーマット関数
+function formatPublishedJapanese(publishedText) {
+    if (!publishedText) return '';
+    
+    // 既に日本語形式の場合はそのまま返す
+    if (publishedText.includes('前')) {
+        return publishedText;
+    }
+    
+    // ISO形式の日付を解析（例：2025-09-07T13:00:58Z）
+    if (publishedText.includes('T') && publishedText.endsWith('Z')) {
+        try {
+            const publishedDate = new Date(publishedText);
+            const now = new Date();
+            const diffMs = now - publishedDate;
+            const diffMinutes = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffMonths = Math.floor(diffDays / 30);
+            const diffYears = Math.floor(diffDays / 365);
+            
+            if (diffYears >= 1) {
+                return `${diffYears}年前`;
+            } else if (diffMonths >= 1) {
+                return `${diffMonths}ヶ月前`;
+            } else if (diffDays >= 1) {
+                return `${diffDays}日前`;
+            } else if (diffHours >= 1) {
+                return `${diffHours}時間前`;
+            } else if (diffMinutes >= 1) {
+                return `${diffMinutes}分前`;
+            } else {
+                return 'たった今';
+            }
+        } catch (e) {
+            console.warn('日付解析エラー:', publishedText, e);
+            return publishedText;
+        }
+    }
+    
+    return publishedText;
+}
+
+// 動画視聴ページへの移動（YouTube Education モード対応）
+function watchVideo(videoId) {
+    // 現在のページでYouTube Education modeが使用されているかを検出
+    const isUsingEducationMode = isCurrentlyUsingYouTubeEducation();
+    
+    let url = `/watch?v=${videoId}`;
+    
+    // YouTube Education モードの場合はパラメータを追加
+    if (isUsingEducationMode) {
+        url += '&edu=1';
+    }
+    
+    window.location.href = url;
+}
+
+// 現在YouTube Education モードが使用されているかを検出
+function isCurrentlyUsingYouTubeEducation() {
+    // YouTube Education iframeが表示されているかチェック
+    const eduIframe = document.getElementById('youtubeEducationPlayer');
+    if (eduIframe && eduIframe.style.display !== 'none') {
+        return true;
+    }
+    
+    // iframeのsrcにyoutubeeducation.comが含まれているかチェック
+    if (eduIframe && eduIframe.src && eduIframe.src.includes('youtubeeducation.com')) {
+        return true;
+    }
+    
+    // URLパラメータでedu=1が指定されているかチェック
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edu') === '1') {
+        return true;
+    }
+    
+    return false;
+}
+
+// サムネイルエラー処理
+function handleThumbnailError(img, videoId) {
+    // maxresdefaultでエラーの場合はhqdefaultにフォールバック
+    if (img.src.includes('maxresdefault')) {
+        img.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    } else if (img.src.includes('hqdefault')) {
+        // hqdefaultでもエラーの場合はdefaultにフォールバック
+        img.src = `https://img.youtube.com/vi/${videoId}/default.jpg`;
+    }
+}
+
+// ビデオプレーヤー初期化
+function initializeVideoPlayer() {
+    // 既存のplayer.jsの機能を呼び出し
+    if (typeof VideoPlayer !== 'undefined') {
+        new VideoPlayer();
+    }
+}
+
+
+// コメント表示
+function displayComments(comments) {
+    const container = document.getElementById('commentsContainer');
+    
+    if (!comments || comments.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-comments fa-2x mb-2"></i>
+                <p>まだコメントがありません</p>
+                <small>最初のコメントを投稿してみませんか？</small>
+            </div>
+        `;
+        return;
+    }
+    
+    const commentsHtml = comments.map(comment => {
+        // アバターURLの改善（デフォルトアバターの質を向上）
+        let avatarUrl = comment.user?.avatar_url || '';
+        
+        if (!avatarUrl || avatarUrl === '') {
+            // YouTubeスタイルのデフォルトアバターを使用
+            const userInitial = (comment.user?.username || 'U').charAt(0).toUpperCase();
+            const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+            const colorIndex = userInitial.charCodeAt(0) % colors.length;
+            const backgroundColor = colors[colorIndex].replace('#', '');
+            avatarUrl = `https://via.placeholder.com/48x48/${backgroundColor}/ffffff?text=${userInitial}`;
+        }
+        const username = comment.user?.username || 'Unknown User';
+        const content = comment.content || '';
+        const timeAgo = formatTimeAgo(comment.created_at);
+        const likes = comment.likes || 0;
+        const sourceIcon = comment.source === 'local' ? '<i class="fas fa-home text-primary" title="ローカル"></i>' : '<i class="fab fa-youtube text-danger" title="YouTube"></i>';
+        
+        return `
+            <div class="comment-item">
+                <div class="d-flex">
+                    <img src="${avatarUrl}" alt="${username}" class="comment-avatar rounded-circle me-3" 
+                         onerror="this.src='https://via.placeholder.com/40x40/cccccc/ffffff?text=U'">
+                    <div class="flex-grow-1">
+                        <div class="comment-header">
+                            <span class="comment-author">${escapeHtml(username)}</span>
+                            <small class="text-muted ms-2">${timeAgo}</small>
+                            <small class="ms-2">${sourceIcon}</small>
+                        </div>
+                        <div class="comment-content">
+                            <p class="mb-2">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
+                        </div>
+                        <div class="comment-actions">
+                            <button class="btn btn-link btn-sm p-0 me-3" onclick="likeComment(${comment.id})">
+                                <i class="fas fa-thumbs-up me-1"></i>
+                                <span id="likes_${comment.id}">${likes}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = `
+        <div class="comments-list">
+            ${commentsHtml}
+        </div>
+    `;
+}
+
+// HTML エスケープ
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+// 時間の表示フォーマット
+function formatTimeAgo(dateString) {
+    if (!dateString) return '';
+    
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffMonths = Math.floor(diffDays / 30);
+        const diffYears = Math.floor(diffDays / 365);
+        
+        if (diffYears >= 1) {
+            return `${diffYears}年前`;
+        } else if (diffMonths >= 1) {
+            return `${diffMonths}ヶ月前`;
+        } else if (diffDays >= 1) {
+            return `${diffDays}日前`;
+        } else if (diffHours >= 1) {
+            return `${diffHours}時間前`;
+        } else if (diffMinutes >= 1) {
+            return `${diffMinutes}分前`;
+        } else {
+            return 'たった今';
+        }
+    } catch (e) {
+        return dateString;
+    }
+}
+
+// コメント数の更新
+function updateCommentCount(count) {
+    const commentCount = document.getElementById('commentCount');
+    if (commentCount) {
+        commentCount.textContent = count > 0 ? `(${count}件)` : '(0件)';
+    }
+}
+
+// コメントいいね機能
+async function likeComment(commentId) {
+    try {
+        const response = await fetch(`/api/comments/${commentId}/like`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            const likesElement = document.getElementById(`likes_${commentId}`);
+            if (likesElement) {
+                likesElement.textContent = data.likes;
+            }
+            showToast('いいねしました！');
+        }
+    } catch (error) {
+        console.error('いいねエラー:', error);
+        showToast('いいねに失敗しました');
+    }
 }
 </script>
+
+<script>
+// 動画投稿者情報を取得・表示（改善版）
+async function loadAuthorInfo() {
+    const videoId = '{{ video_info.videoId if video_info else "" }}';
+    if (!videoId) {
+        console.error('Video ID not found for author info');
+        return;
+    }
+    
+    try {
+        console.log('🎭 動画投稿者情報取得開始:', videoId);
+        
+        // 複数のAPIから投稿者情報を取得試行
+        const apiSources = [
+            `/api/video-author/${videoId}`,
+            `/api/related-videos/${videoId}?q=author`
+        ];
+        
+        for (const apiUrl of apiSources) {
+            try {
+                const response = await fetch(apiUrl, {
+                    headers: { 'Accept': 'application/json' },
+                    timeout: 5000
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    let authorInfo = null;
+                    
+                    // APIレスポンスの構造に応じて投稿者情報を抽出
+                    if (data.success && data.author_info) {
+                        authorInfo = data.author_info;
+                    } else if (data.success && data.videos && data.videos.length > 0) {
+                        // 関連動画APIから投稿者情報を抽出
+                        const firstVideo = data.videos[0];
+                        authorInfo = {
+                            author: firstVideo.author || '{{ video_info.author }}',
+                            authorId: firstVideo.authorId || '{{ video_info.authorId }}',
+                            avatar_url: firstVideo.authorThumbnails && firstVideo.authorThumbnails.length > 0 
+                                ? firstVideo.authorThumbnails[0].url 
+                                : ''
+                        };
+                    }
+                    
+                    if (authorInfo && authorInfo.author) {
+                        // 投稿者アイコンを更新
+                        const authorAvatar = document.getElementById('authorAvatar');
+                        if (authorAvatar) {
+                            if (authorInfo.avatar_url) {
+                                authorAvatar.src = authorInfo.avatar_url;
+                                authorAvatar.alt = `${authorInfo.author}のアイコン`;
+                                console.log('✅ 投稿者アイコン更新成功:', authorInfo.author);
+                            } else {
+                                // デフォルトアイコンを設定
+                                authorAvatar.src = 'https://yt3.ggpht.com/ytc/AOPolaDefault=s88-c-k-c0x00ffffff-no-rj';
+                                authorAvatar.alt = `${authorInfo.author}のアイコン`;
+                            }
+                        }
+                        
+                        // 投稿者名を更新
+                        const authorName = document.getElementById('authorName');
+                        if (authorName && authorInfo.author) {
+                            authorName.textContent = authorInfo.author;
+                        }
+                        
+                        console.log('✅ 投稿者情報更新完了:', authorInfo.author);
+                        return; // 成功したらループを抜ける
+                    }
+                }
+            } catch (error) {
+                console.warn(`投稿者情報API ${apiUrl} エラー:`, error);
+                continue; // 次のAPIを試行
+            }
+        }
+        
+        // 全てのAPIが失敗した場合のフォールバック処理
+        console.warn('全ての投稿者情報APIが失敗、テンプレート情報を使用');
+        const authorAvatar = document.getElementById('authorAvatar');
+        const authorName = document.getElementById('authorName');
+        
+        if (authorName) {
+            authorName.textContent = '{{ video_info.author if video_info else "投稿者" }}';
+        }
+        
+        if (authorAvatar) {
+            // YouTubeチャンネルIDから推測してデフォルトアイコンを設定
+            const channelId = '{{ video_info.authorId if video_info else "" }}';
+            if (channelId) {
+                authorAvatar.src = `https://yt3.ggpht.com/ytc/${channelId}=s88-c-k-c0x00ffffff-no-rj`;
+            } else {
+                authorAvatar.src = 'https://yt3.ggpht.com/ytc/AOPolaDefault=s88-c-k-c0x00ffffff-no-rj';
+            }
+            authorAvatar.alt = '{{ video_info.author if video_info else "投稿者" }}のアイコン';
+        }
+        
+    } catch (error) {
+        console.error('投稿者情報取得エラー:', error);
+    }
+}
+
+// チャンネルページへの遷移機能
+function goToChannel() {
+    const videoInfo = {{ video_info|tojson }};
+    if (videoInfo && videoInfo.authorId && videoInfo.author) {
+        const channelUrl = `/channel/${videoInfo.authorId}`;
+        window.location.href = channelUrl;
+    } else {
+        console.warn('チャンネル情報が不足しています');
+    }
+}
+
+</script>
+
+<!-- 既存のplayer.jsを読み込み -->
+<script src="{{ url_for('static', filename='js/player.js') }}"></script>
 {% endblock %}
