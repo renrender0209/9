@@ -4,17 +4,19 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT main:app
+    startCommand: gunicorn -w 2 --timeout 120 app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11
       - key: SESSION_SECRET
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: youtube-app-db
+          name: renrentube-db
           property: connectionString
 
 databases:
-  - name: renrentube
+  - name: renrentube-db
     plan: free
+    databaseName: renrentube
+    user: renrentube
